@@ -1,0 +1,349 @@
+================================================================================
+OPTIMIZACIÓN CONTRAFACTUAL - TURISMO SOSTENIBLE MALLORCA
+================================================================================
+
+📊 Variables explicativas (p=8): ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments', 'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 'VehicleRegistration']
+⚖️  Pesos (wⱼ = 1/p): 0.1250 para cada variable
+
+📈 Desviación estándar de cada variable:
+c:\Users\Usuario\Documents\Proyecto_Caso_Mallorca-1\SolParte2.py:40: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  print(f"   {col:25s}: σ = {std_vector[i]:.6f}")
+   SchoolingRate            : σ = 0.283761
+   Poverty                  : σ = 0.305765
+   UnaccountedWater         : σ = 0.254165
+   OpenEstablishments       : σ = 0.311507
+   RenewableResources       : σ = 0.289201
+   PassengersArriving       : σ = 0.304481
+   MaritimeTraffic          : σ = 0.289472
+   VehicleRegistration      : σ = 0.350467
+
+================================================================================
+6. FORMULACIÓN TEÓRICA DEL PROBLEMA DE OPTIMIZACIÓN CONTRAFACTUAL
+================================================================================
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    MODELO DE OPTIMIZACIÓN CONTRAFACTUAL                   ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+OBJETIVO:
+---------
+Encontrar los cambios mínimos en las variables explicativas para lograr un
+incremento deseado ε en el índice de turismo sostenible y.
+
+VARIABLES DE DECISIÓN:
+---------------------
+• βⱼ ∈ ℝ  : Cambio propuesto para la variable xⱼ (j = 1, ..., p)
+• δⱼ ∈ {0,1}: Indicador binario que vale 1 si se modifica xⱼ, 0 en caso contrario
+
+FUNCIÓN OBJETIVO:
+----------------
+Minimizar:  Σⱼ₌₁ᵖ βⱼ + k·Σⱼ₌₁ᵖ δⱼ
+
+Donde:
+- El primer término minimiza la magnitud total de los cambios
+- El segundo término penaliza el número de variables modificadas
+- k es un parámetro de penalización (k > 0)
+
+RESTRICCIONES:
+-------------
+
+1) RESTRICCIÓN DE INCREMENTO DESEADO:
+   Σⱼ₌₁ᵖ wⱼ(xⱼ + βⱼ) ≥ y_actual + ε
+
+   Equivalentemente:
+   Σⱼ₌₁ᵖ wⱼ·βⱼ ≥ ε
+
+2) RESTRICCIÓN DE SELECCIÓN DE VARIABLES:
+   μₗ ≤ Σⱼ₌₁ᵖ δⱼ ≤ μᵤ
+
+   Donde:
+   - μₗ: número mínimo de variables a modificar
+   - μᵤ: número máximo de variables a modificar
+
+3) RESTRICCIÓN DE COTA SUPERIOR DE CAMBIOS:
+   βⱼ ≤ a·f_std(xⱼ) = a·σⱼ    ∀j
+
+   Donde:
+   - a: constante definida por el usuario
+   - σⱼ: desviación estándar de la variable xⱼ
+
+   JUSTIFICACIÓN DE 'a':
+   Usaremos a = 0.3 (30% de la desviación estándar) porque:
+   • Permite cambios significativos pero realistas
+   • Evita modificaciones extremas que sean poco factibles
+   • Es consistente con variaciones naturales en los datos históricos
+
+4) RESTRICCIÓN DE RANGO [0,1]:
+   0 ≤ xⱼ + βⱼ ≤ 1    ∀j
+
+   Equivalentemente:
+   -xⱼ ≤ βⱼ ≤ 1 - xⱼ    ∀j
+
+5) RESTRICCIÓN DE ACOPLAMIENTO (Big-M):
+   Si δⱼ = 0, entonces βⱼ = 0
+   Si δⱼ = 1, entonces βⱼ puede ser cualquier valor válido
+
+   Implementación:
+   m·δⱼ ≤ βⱼ ≤ M·δⱼ    ∀j
+
+   Donde:
+   - m: número negativo grande (ej: -50000)
+   - M: número positivo grande (ej: 50000)
+
+6) RESTRICCIÓN DE NO NEGATIVIDAD DE CAMBIOS (opcional):
+   βⱼ ≥ 0    ∀j
+
+   Esto asegura que solo se incrementen variables, nunca se disminuyan.
+   (Se puede omitir si se permiten decrementos)
+
+FORMULACIÓN COMPLETA:
+--------------------
+min  Σⱼ₌₁ᵖ βⱼ + k·Σⱼ₌₁ᵖ δⱼ
+
+s.a.:
+    Σⱼ₌₁ᵖ wⱼ·βⱼ ≥ ε                          [Incremento deseado]
+    μₗ ≤ Σⱼ₌₁ᵖ δⱼ ≤ μᵤ                        [Número de modificaciones]
+    βⱼ ≤ a·σⱼ                  ∀j            [Cota superior]
+    m·δⱼ ≤ βⱼ ≤ M·δⱼ           ∀j            [Acoplamiento]
+    βⱼ ≤ 1 - xⱼ                ∀j            [Rango superior]
+    βⱼ ≥ 0                     ∀j            [No negatividad]
+    δⱼ ∈ {0,1}                 ∀j            [Variable binaria]
+    βⱼ ∈ ℝ                     ∀j            [Variable continua]
+
+
+================================================================================
+7. CAMBIOS PARA INCREMENTOS EN EL AÑO 2024
+================================================================================
+
+--------------------------------------------------------------------------------
+7.a) Incremento del 1% en 2024
+--------------------------------------------------------------------------------
+
+================================================================================
+RESULTADOS - AÑO 2024
+================================================================================
+Estado: Optimal
+
+📊 INDICADOR DE SOSTENIBILIDAD:
+   y actual:     0.490000
+   y nuevo:      0.562599
+   Incremento:   0.072599 (14.82%)
+   Objetivo:     0.004900 (1.0%)
+
+🔧 VARIABLES MODIFICADAS (1/8):
+       Variable  Valor_Actual  Cambio_β  Modificar_δ  Valor_Nuevo  Cambio_%
+MaritimeTraffic       0.80065    0.0392         True      0.83985  4.896021
+
+📈 MAGNITUD TOTAL DE CAMBIOS: 0.039200
+
+--------------------------------------------------------------------------------
+7.b) Incremento del 5% en 2024 (máximo 4 variables)
+--------------------------------------------------------------------------------
+
+================================================================================
+RESULTADOS - AÑO 2024
+================================================================================
+Estado: Optimal
+
+📊 INDICADOR DE SOSTENIBILIDAD:
+   y actual:     0.490000
+   y nuevo:      0.582199
+   Incremento:   0.092199 (18.82%)
+   Objetivo:     0.024500 (5.0%)
+
+🔧 VARIABLES MODIFICADAS (2/8):
+           Variable  Valor_Actual  Cambio_β  Modificar_δ  Valor_Nuevo  Cambio_%
+ OpenEstablishments      0.148170   0.09086         True     0.239030 61.321559
+VehicleRegistration      0.331331   0.10514         True     0.436471 31.732590
+
+📈 MAGNITUD TOTAL DE CAMBIOS: 0.196000
+
+================================================================================
+8. RECOMENDACIÓN: MODIFICAR UNA SOLA VARIABLE PARA INCREMENTO DEL 25%
+================================================================================
+
+ESTRATEGIA:
+-----------
+Para identificar la mejor variable a modificar, probaremos cada una
+individualmente y compararemos:
+1. ¿Es factible lograr 25% con una sola variable?
+2. ¿Cuánto cambio se requiere?
+3. ¿Es realista ese cambio?
+
+
+--------------------------------------------------------------------------------
+Probando: SchoolingRate
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: Poverty
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: UnaccountedWater
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: OpenEstablishments
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: RenewableResources
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: PassengersArriving
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: MaritimeTraffic
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+--------------------------------------------------------------------------------
+Probando: VehicleRegistration
+--------------------------------------------------------------------------------
+✗ NO FACTIBLE - No se puede lograr 25% con esta variable
+
+================================================================================
+RECOMENDACIÓN FINAL
+================================================================================
+
+❌ NINGUNA VARIABLE INDIVIDUAL puede lograr un incremento del 25%
+   Se requiere modificar múltiples variables simultáneamente.
+
+================================================================================
+10. FORMULACIÓN DE RESTRICCIONES ADICIONALES
+================================================================================
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║              RESTRICCIONES LÓGICAS ADICIONALES                            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+a) Si se modifica MaritimeTraffic, también debe modificarse PassengersArriving
+   ---------------------------------------------------------------------------
+
+   FORMULACIÓN:
+   δ_MaritimeTraffic ≤ δ_PassengersArriving
+
+   EXPLICACIÓN:
+   • Si δ_MaritimeTraffic = 1 → δ_PassengersArriving debe ser 1
+   • Si δ_MaritimeTraffic = 0 → δ_PassengersArriving puede ser 0 o 1
+
+   CÓDIGO PYTHON:
+   idx_maritime = feature_cols.index('MaritimeTraffic')
+   idx_passengers = feature_cols.index('PassengersArriving')
+   model += (delta[idx_maritime] <= delta[idx_passengers],
+             "Implicacion_Maritime_Passengers")
+
+
+b) Se debe modificar una y solo una entre SchoolRate y RenewableResources
+   -----------------------------------------------------------------------
+
+   FORMULACIÓN:
+   δ_SchoolingRate + δ_RenewableResources = 1
+
+   EXPLICACIÓN:
+   • Exactamente una de las dos variables debe valer 1
+   • Esto garantiza que se modifica una y solo una
+
+   CÓDIGO PYTHON:
+   idx_school = feature_cols.index('SchoolingRate')
+   idx_renewable = feature_cols.index('RenewableResources')
+   model += (delta[idx_school] + delta[idx_renewable] == 1,
+             "XOR_School_Renewable")
+
+
+c) Al menos una de las variables Poverty o VehicleRegistration debe modificarse
+   -----------------------------------------------------------------------------
+
+   FORMULACIÓN:
+   δ_Poverty + δ_VehicleRegistration ≥ 1
+
+   EXPLICACIÓN:
+   • La suma debe ser al menos 1
+   • Permite que ambas sean modificadas (suma = 2)
+   • Pero al menos una debe ser modificada
+
+   CÓDIGO PYTHON:
+   idx_poverty = feature_cols.index('Poverty')
+   idx_vehicle = feature_cols.index('VehicleRegistration')
+   model += (delta[idx_poverty] + delta[idx_vehicle] >= 1,
+             "AtLeastOne_Poverty_Vehicle")
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    IMPLEMENTACIÓN CONJUNTA                                ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+def add_all_restrictions(model, beta, delta):
+    '''Agrega todas las restricciones adicionales a)-c)'''
+
+    # Obtener índices de variables
+    idx_maritime = feature_cols.index('MaritimeTraffic')
+    idx_passengers = feature_cols.index('PassengersArriving')
+    idx_school = feature_cols.index('SchoolingRate')
+    idx_renewable = feature_cols.index('RenewableResources')
+    idx_poverty = feature_cols.index('Poverty')
+    idx_vehicle = feature_cols.index('VehicleRegistration')
+
+    # a) Maritime → Passengers
+    model += (delta[idx_maritime] <= delta[idx_passengers],
+              "Restriction_a_Maritime_implies_Passengers")
+
+    # b) Exactamente uno: School XOR Renewable
+    model += (delta[idx_school] + delta[idx_renewable] == 1,
+              "Restriction_b_XOR_School_Renewable")
+
+    # c) Al menos uno: Poverty OR Vehicle
+    model += (delta[idx_poverty] + delta[idx_vehicle] >= 1,
+              "Restriction_c_AtLeastOne_Poverty_Vehicle")
+
+
+================================================================================
+DEMOSTRACIÓN: Optimización con restricciones a), b) y c)
+================================================================================
+
+================================================================================
+RESULTADOS - AÑO 2024
+================================================================================
+Estado: Optimal
+
+📊 INDICADOR DE SOSTENIBILIDAD:
+   y actual:     0.490000
+   y nuevo:      0.582199
+   Incremento:   0.092199 (18.82%)
+   Objetivo:     0.024500 (5.0%)
+
+🔧 VARIABLES MODIFICADAS (3/8):
+           Variable  Valor_Actual  Cambio_β  Modificar_δ  Valor_Nuevo  Cambio_%
+ OpenEstablishments      0.148170  0.093452         True     0.241622 63.070963
+ RenewableResources      0.829295  0.086760         True     0.916055 10.461920
+VehicleRegistration      0.331331  0.015788         True     0.347119  4.764941
+
+📈 MAGNITUD TOTAL DE CAMBIOS: 0.196000
+
+✓ VERIFICACIÓN DE RESTRICCIONES:
+
+  a) Maritime → Passengers:
+     Maritime modificado: False
+     Passengers modificado: False
+     ✓ Cumple: True
+
+  b) School XOR Renewable:
+     School modificado: False
+     Renewable modificado: True
+     Suma: 1
+     ✓ Cumple: True
+
+  c) Poverty OR Vehicle (al menos uno):
+     Poverty modificado: False
+     Vehicle modificado: True
+     Suma: 1
+     ✓ Cumple: True

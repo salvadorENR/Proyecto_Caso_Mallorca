@@ -1,0 +1,193 @@
+================================================================================
+ANÁLISIS DE DATOS FALTANTES (NAs)
+================================================================================
+
+           Variable  NAs  Total  Porcentaje_NA
+      SchoolingRate   10     25           40.0
+            Poverty   14     25           56.0
+   UnaccountedWater    0     25            0.0
+ OpenEstablishments    9     25           36.0
+ RenewableResources   10     25           40.0
+ PassengersArriving    6     25           24.0
+    MaritimeTraffic    6     25           24.0
+VehicleRegistration   15     25           60.0
+               year    0     25            0.0
+                  y   15     25           60.0
+
+📊 Total de observaciones: 25
+📅 Período completo: 2000 - 2024
+
+================================================================================
+ESTRATEGIAS PARA MANEJAR DATOS FALTANTES
+================================================================================
+
+OPCIÓN 1: Eliminar filas con NAs (Listwise deletion)
+  ✓ Ventaja: Solo usa datos completos
+  ✗ Desventaja: Reduce mucho el tamaño (de 25 a 10 observaciones)
+
+OPCIÓN 2: Imputación con Media/Mediana
+  ✓ Ventaja: Mantiene todas las observaciones
+  ✗ Desventaja: Introduce sesgo si NAs no son aleatorios
+
+OPCIÓN 3: Usar solo variables completas
+  ✓ Ventaja: Más observaciones disponibles
+  ✗ Desventaja: Pierde información de variables importantes
+
+
+================================================================================
+ESTRATEGIA SELECCIONADA: Eliminar filas con NAs en y
+================================================================================
+
+✓ Observaciones con 'y' disponible: 10
+✓ Años disponibles: 2015 - 2024
+
+📋 Observaciones sin 'y' pero con todas las X completas: 0
+
+✓ Dataset final: 10 observaciones con 'y' calculado
+✓ Años finales: [np.int64(2015), np.int64(2016), np.int64(2017), np.int64(2018), np.int64(2019), np.int64(2020), np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+================================================================================
+COMPARACIÓN: Dataset con Imputación de NAs (Media)
+================================================================================
+✓ Dataset imputado: 25 observaciones
+✓ Todas las variables completas: True
+
+================================================================================
+1. ANÁLISIS EXPLORATORIO DE DATOS (DATASET FINAL)
+================================================================================
+
+📊 Dimensiones del dataset: 10 filas × 10 columnas
+📅 Período: 2015 - 2024
+
+================================================================================
+ESTADÍSTICAS DESCRIPTIVAS
+================================================================================
+       SchoolingRate  Poverty  UnaccountedWater  OpenEstablishments  ...  MaritimeTraffic  VehicleRegistration       year        y
+count        10.0000  10.0000           10.0000             10.0000  ...          10.0000              10.0000    10.0000  10.0000
+mean          0.5790   0.5165            0.6447              0.1773  ...           0.6365               0.5543  2019.5000   0.5610
+std           0.2838   0.3058            0.2542              0.3115  ...           0.2895               0.3505     3.0277   0.1477
+min           0.0000   0.0000            0.1532              0.0000  ...           0.0000               0.0000  2015.0000   0.3500
+25%           0.4357   0.4372            0.4932              0.0149  ...           0.5318               0.3435  2017.2500   0.4750
+50%           0.5952   0.5045            0.6833              0.0537  ...           0.6958               0.5319  2019.5000   0.5200
+75%           0.7071   0.6253            0.7830              0.1298  ...           0.8054               0.8583  2021.7500   0.6650
+max           1.0000   1.0000            1.0000              1.0000  ...           1.0000               1.0000  2024.0000   0.8000
+
+[8 rows x 10 columns]
+
+================================================================================
+CORRELACIÓN CON LA VARIABLE OBJETIVO (y)
+================================================================================
+y                      1.000000
+VehicleRegistration    0.531402
+PassengersArriving     0.495258
+Poverty                0.495008
+MaritimeTraffic        0.422793
+UnaccountedWater       0.411148
+SchoolingRate          0.390945
+OpenEstablishments    -0.354249
+RenewableResources    -0.428215
+Name: y, dtype: float64
+
+✓ Variables explicativas: 8
+✓ Observaciones: 10
+✓ Variables: ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments', 'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 'VehicleRegistration']
+
+================================================================================
+2. REGRESIÓN CON NORMA ℓ1 - MINIMIZAR SUMA DE DESVIACIONES ABSOLUTAS
+================================================================================
+
+FORMULACIÓN TEÓRICA:
+-------------------
+Minimizar: Σ|yᵢ - (β₀ + β₁x₁ᵢ + β₂x₂ᵢ + ... + βₚxₚᵢ)|
+
+Variables de decisión:
+- βⱼ: coeficientes de regresión (j = 0, 1, ..., p)
+- dᵢ⁺, dᵢ⁻: desviaciones positiva y negativa para cada observación i
+
+Restricciones:
+- yᵢ = β₀ + Σ(βⱼ·xⱼᵢ) + dᵢ⁺ - dᵢ⁻  ∀i
+- dᵢ⁺, dᵢ⁻ ≥ 0  ∀i
+
+Función objetivo:
+- Minimizar: Σ(dᵢ⁺ + dᵢ⁻)
+
+⏳ Resolviendo modelo ℓ1...
+
+✓ Estado: Optimal
+
+ECUACIÓN DE LA RECTA (ℓ1):
+y = 0.104611 +0.574996·SchoolingRate -0.475305·Poverty +1.529643·UnaccountedWater +0.671191·OpenEstablishments -1.636215·RenewableResources +2.086323·PassengersArriving -0.009261·MaritimeTraffic -2.405572·VehicleRegistration
+
+MÉTRICAS DE ERROR:
+  MAE:  0.003667
+  RMSE: 0.011595
+  R²:   0.993151
+
+================================================================================
+3. REGRESIÓN CON NORMA ℓ∞ - MINIMIZAR DESVIACIÓN ABSOLUTA MÁXIMA
+================================================================================
+
+FORMULACIÓN TEÓRICA:
+-------------------
+Minimizar: max|yᵢ - (β₀ + β₁x₁ᵢ + ... + βₚxₚᵢ)|
+
+Variables de decisión:
+- βⱼ: coeficientes de regresión
+- z: desviación máxima
+
+Restricciones:
+- |yᵢ - predicciónᵢ| ≤ z  ∀i
+
+Función objetivo:
+- Minimizar: z
+
+⏳ Resolviendo modelo ℓ∞...
+
+✓ Estado: Optimal
+
+ECUACIÓN DE LA RECTA (ℓ∞):
+y = 0.286098 +0.754138·SchoolingRate -0.501096·Poverty +1.352677·UnaccountedWater +0.236241·OpenEstablishments -1.426979·RenewableResources +1.605618·PassengersArriving -0.076872·MaritimeTraffic -2.080211·VehicleRegistration
+
+MÉTRICAS DE ERROR:
+  Error Máximo: 0.018333
+  MAE:  0.018333
+  RMSE: 0.018333
+  R²:   0.982877
+
+================================================================================
+4. REGRESIÓN CON NORMA ℓ2 - MÍNIMOS CUADRADOS (SCIKIT-LEARN)
+================================================================================
+
+ECUACIÓN DE LA RECTA (ℓ2):
+y = 0.113607 +0.594474·SchoolingRate -0.481682·Poverty +1.529858·UnaccountedWater +0.646464·OpenEstablishments -1.635346·RenewableResources +2.082627·PassengersArriving -0.038840·MaritimeTraffic -2.397313·VehicleRegistration
+
+MÉTRICAS DE ERROR:
+  MAE:  0.005500
+  MSE:  0.000101
+  RMSE: 0.010042
+  R²:   0.994863
+
+================================================================================
+5. COMPARACIÓN DE RESULTADOS
+================================================================================
+
+        Método      MAE     RMSE       R²  Error_Máximo
+      ℓ1 (MAD) 0.003667 0.011595 0.993151      0.036667
+ℓ∞ (Chebyshev) 0.018333 0.018333 0.982877      0.018333
+      ℓ2 (MCO) 0.005500 0.010042 0.994863      0.027500
+
+================================================================================
+ANÁLISIS FINAL
+================================================================================
+
+📊 DATASET UTILIZADO: 10 observaciones (años 2015-2024)
+
+⚠️ NOTA IMPORTANTE SOBRE NAs:
+- Total de datos originales: 25 años (2000-2024)
+- Datos con 'y' disponible: 10 años
+- Datos descartados por NAs: 15 años
+
+🎯 MEJOR MODELO POR MÉTRICA:
+- Menor MAE: ℓ1 (MAD)
+- Mayor R²: ℓ2 (MCO)
+- Menor Error Máximo: ℓ∞ (Chebyshev)
