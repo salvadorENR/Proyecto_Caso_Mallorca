@@ -1,0 +1,164 @@
+=====================================================================
+                OPTIMIZATION & ANALYSIS REPORT - MALLORCA             
+=====================================================================
+
+Dataset shape: (25, 10)
+Years: 0 to 24
+
+--- Comprehensive Data Cleaning ---
+Missing values before cleaning: 85
+Column-wise missing values:
+SchoolingRate          10
+Poverty                14
+UnaccountedWater        0
+OpenEstablishments      9
+RenewableResources     10
+PassengersArriving      6
+MaritimeTraffic         6
+VehicleRegistration    15
+year                    0
+y                      15
+dtype: int64
+Missing values after cleaning: 0
+Data cleaning complete.
+Created normalized target variable 'y'
+Final dataset: 25 samples, 10 features
+Features: ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments', 'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 'VehicleRegistration', 'year', 'y']
+
+============================================================
+PART 1: EXPLORATORY DATA ANALYSIS
+============================================================
+
+Dataset Overview:
+       SchoolingRate    Poverty  UnaccountedWater  OpenEstablishments  RenewableResources  PassengersArriving  MaritimeTraffic  VehicleRegistration         year          y
+count      25.000000  25.000000         25.000000           25.000000           25.000000           25.000000        25.000000            25.000000    25.000000  25.000000
+mean        0.452698   0.491642          0.536542            0.155618            0.429634            0.634219         0.399894             0.554311  2012.000000   0.462345
+std         0.232585   0.194643          0.268152            0.193887            0.218665            0.199945         0.287331             0.214616     7.359801   0.111131
+min         0.000000   0.000000          0.000000            0.000000            0.000000            0.000000         0.000000             0.000000  2000.000000   0.330653
+25%         0.428571   0.491642          0.308265            0.061205            0.299477            0.559442         0.164323             0.554311  2006.000000   0.387541
+50%         0.452698   0.491642          0.538327            0.155618            0.429634            0.634219         0.399894             0.554311  2012.000000   0.410378
+75%         0.457143   0.491642          0.766419            0.155618            0.429634            0.756693         0.590339             0.554311  2018.000000   0.498633
+max         1.000000   1.000000          1.000000            1.000000            1.000000            1.000000         1.000000             1.000000  2024.000000   0.712875
+
+Correlation with Target:
+  y: 1.0000
+  MaritimeTraffic: 0.8366
+  year: 0.6908
+  PassengersArriving: 0.6634
+  SchoolingRate: 0.6180
+  Poverty: 0.4749
+  UnaccountedWater: 0.4345
+  VehicleRegistration: 0.3037
+  RenewableResources: 0.2594
+  OpenEstablishments: -0.2580
+
+============================================================
+PART 2: REGRESSION ANALYSIS
+============================================================
+
+--- Data Validation ---
+Data validation complete.
+
+--- QUESTION 2: L1 Norm (Least Absolute Deviations) ---
+Mathematical Formulation:
+Minimize: Σ|y_i - (β₀ + Σβ_j*x_ij)|
+Subject to: y_i - (β₀ + Σβ_j*x_ij) = u_i - v_i, u_i, v_i ≥ 0
+Equivalent LP: Minimize Σ(u_i + v_i)
+
+L1 Norm Equation:
+y = -8.411111 + 0.100000*SchoolingRate + 0.100000*Poverty + 0.100000*UnaccountedWater + 0.100000*OpenEstablishments + 0.100000*RenewableResources + 0.100000*PassengersArriving + 0.100000*MaritimeTraffic + 0.100000*VehicleRegistration + 0.004167*year + 0.222222*y
+MAE (L1): 0.000000
+
+--- QUESTION 3: L∞ Norm (Minimax) ---
+Mathematical Formulation:
+Minimize: max|y_i - (β₀ + Σβ_j*x_ij)|
+Subject to: |y_i - (β₀ + Σβ_j*x_ij)| ≤ M for all i
+Equivalent LP: Minimize M subject to -M ≤ residual_i ≤ M
+
+L∞ Norm Equation:
+y = -8.411111 + 0.100000*SchoolingRate + 0.100000*Poverty + 0.100000*UnaccountedWater + 0.100000*OpenEstablishments + 0.100000*RenewableResources + 0.100000*PassengersArriving + 0.100000*MaritimeTraffic + 0.100000*VehicleRegistration + 0.004167*year + 0.222222*y
+Maximum Absolute Error (L∞): 0.000000
+
+--- QUESTION 4: L2 Norm (Least Squares) ---
+
+L2 Norm Equation:
+y = -8.411111 + 0.100000*SchoolingRate + 0.100000*Poverty + 0.100000*UnaccountedWater + 0.100000*OpenEstablishments + 0.100000*RenewableResources + 0.100000*PassengersArriving + 0.100000*MaritimeTraffic + 0.100000*VehicleRegistration + 0.004167*year + 0.222222*y
+R² Score: 1.0000
+MSE: 0.000000
+
+==================================================
+REGRESSION PERFORMANCE SUMMARY
+==================================================
+              Model          MAE          MSE    Max_Error  R²
+L1 (Least Absolute) 0.000000e+00 5.918493e-15 7.756667e-08 NaN
+       L∞ (Minimax) 7.693111e-08 5.918493e-15 0.000000e+00 NaN
+ L2 (Least Squares) 3.166356e-15 1.252785e-29 6.050715e-15 1.0
+
+============================================================
+PART 3: COUNTERFACTUAL SCENARIOS
+============================================================
+
+Q7a: 1% Increase (Minimal changes)
+
+--- QUESTION 6: Counterfactual Optimization Formulation ---
+Objective: Minimize Σβ_j + k⋅Σδ_j
+Subject to:
+  Σw_j⋅β_j ≥ ε (Target improvement)
+  β_j ≤ a⋅σ_j (Bound by standard deviation)
+  m⋅δ_j ≤ β_j ≤ M⋅δ_j (Linking constraints)
+  μ_l ≤ Σδ_j ≤ μ_u (Variable selection bounds)
+  0 ≤ x_j + β_j ≤ 1 (Range preservation)
+Status: Optimal
+Recommended Changes:
+  Poverty: +0.0577 (Original: 0.48 → New: 0.54)
+Target improvement: 1.0%
+Achieved improvement: 1.00%
+Variables changed: 1
+
+Q7b: 5% Increase (Max 4 variables)
+
+--- QUESTION 6: Counterfactual Optimization Formulation ---
+Objective: Minimize Σβ_j + k⋅Σδ_j
+Subject to:
+  Σw_j⋅β_j ≥ ε (Target improvement)
+  β_j ≤ a⋅σ_j (Bound by standard deviation)
+  m⋅δ_j ≤ β_j ≤ M⋅δ_j (Linking constraints)
+  μ_l ≤ Σδ_j ≤ μ_u (Variable selection bounds)
+  0 ≤ x_j + β_j ≤ 1 (Range preservation)
+Status: Optimal
+Recommended Changes:
+  SchoolingRate: +0.0109 (Original: 0.59 → New: 0.60)
+  UnaccountedWater: +0.1341 (Original: 0.52 → New: 0.65)
+  MaritimeTraffic: +0.1437 (Original: 0.80 → New: 0.94)
+Target improvement: 5.0%
+Achieved improvement: 5.00%
+Variables changed: 3
+
+Q8: 25% Increase (Single variable investment)
+
+--- QUESTION 6: Counterfactual Optimization Formulation ---
+Objective: Minimize Σβ_j + k⋅Σδ_j
+Subject to:
+  Σw_j⋅β_j ≥ ε (Target improvement)
+  β_j ≤ a⋅σ_j (Bound by standard deviation)
+  m⋅δ_j ≤ β_j ≤ M⋅δ_j (Linking constraints)
+  μ_l ≤ Σδ_j ≤ μ_u (Variable selection bounds)
+  0 ≤ x_j + β_j ≤ 1 (Range preservation)
+Status: Infeasible
+No feasible solution found with current constraints.
+Try relaxing constraints or reducing target improvement.
+
+Q10: Logical Constraints Test
+Status: Optimal
+Recommended Changes:
+  Poverty: +0.0567 (Original: 0.48 → New: 0.54)
+  RenewableResources: +0.0010 (Original: 0.83 → New: 0.83)
+Target improvement: 1.0%
+Achieved improvement: 1.00%
+Variables changed: 2
+
+=====================================================================
+                       ANALYSIS COMPLETE                             
+All results saved to: 'optimization_results.txt'
+Visualizations saved to: 'EDA_Plots.png', 'Regression_Comparison.png'
+=====================================================================
