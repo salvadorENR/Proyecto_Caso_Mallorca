@@ -9,10 +9,15 @@ Original Years: 0 to 24
 
 --- Cleaning Strategy B: Dropping Rows with Missing Values ---
 Target column 'SustainableTourismIndex' not found. Checking feature completeness...
+<<<<<<< HEAD
+=======
+Dropped 15 rows containing missing values.
+>>>>>>> 8a7e7bee03df96262b54874635e88275713940eb
 Final Clean Dataset shape: (10, 10)
 Remaining Years: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 
 --- Clean Data (All Rows) ---
+<<<<<<< HEAD
     SchoolingRate   Poverty  UnaccountedWater  OpenEstablishments  ...  MaritimeTraffic  VehicleRegistration  year         y
 15       0.000000  0.000000          0.773269            0.037284  ...         0.373200             0.578007  2015  0.309106
 16       0.428571  0.504451          0.786307            0.061205  ...         0.590339             0.879505  2016  0.433907
@@ -24,6 +29,19 @@ Remaining Years: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 22       0.600000  0.504451          0.648453            0.046184  ...         0.889613             0.379875  2022  0.612617
 23       0.714286  0.527860          0.428610            0.007442  ...         1.000000             0.485874  2023  0.627155
 24       0.590476  0.484559          0.520416            0.148170  ...         0.800650             0.331331  2024  0.567302
+=======
+    SchoolingRate   Poverty  UnaccountedWater  ...  VehicleRegistration  year         y
+15       0.000000  0.000000          0.773269  ...             0.578007  2015  0.309106
+16       0.428571  0.504451          0.786307  ...             0.879505  2016  0.433907
+17       0.400000  0.138477          1.000000  ...             0.965409  2017  0.534623
+18       0.685714  0.925816          0.933967  ...             1.000000  2018  0.648283
+19       0.914286  1.000000          0.718190  ...             0.794861  2019  0.667733
+20       1.000000  0.657765          0.153190  ...             0.000000  2020  0.396315
+21       0.457143  0.421365          0.484187  ...             0.128244  2021  0.419911
+22       0.600000  0.504451          0.648453  ...             0.379875  2022  0.612617
+23       0.714286  0.527860          0.428610  ...             0.485874  2023  0.627155
+24       0.590476  0.484559          0.520416  ...             0.331331  2024  0.567302
+>>>>>>> 8a7e7bee03df96262b54874635e88275713940eb
 
 [10 rows x 10 columns]
 
@@ -46,7 +64,10 @@ PART 2: REGRESSION ANALYSIS
 L2 (Least Squares) 5.051515e-15 6.148120e-15 1.310063e-14 1.0
 L1 (Least Abs Dev) 2.768025e-08 3.062065e-08 4.291608e-08 1.0
    L_inf (Minimax) 2.768025e-08 3.062065e-08 0.000000e+00 1.0
+<<<<<<< HEAD
 Plot saved to 'Regression_Comparison_DropNA.png'
+=======
+>>>>>>> 8a7e7bee03df96262b54874635e88275713940eb
 
 ============================================================
 PART 3: COUNTERFACTUAL SCENARIOS
