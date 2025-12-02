@@ -1,0 +1,79 @@
+=====================================================================
+      OPTIMIZATION REPORT - STRATEGY B: LISTWISE DELETION            
+      (Prioritizing Data Integrity over Historical Length)           
+      With Normalization for Raw Data Compatibility                  
+=====================================================================
+
+Original Dataset shape: (25, 10)
+Original Years: 0 to 24
+
+--- Cleaning Strategy B: Dropping Rows with Missing Values ---
+Target column 'SustainableTourismIndex' not found. Checking feature completeness...
+Final Clean Dataset shape: (10, 10)
+Remaining Years: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+
+--- Clean Data (All Rows) ---
+    SchoolingRate   Poverty  UnaccountedWater  OpenEstablishments  ...  MaritimeTraffic  VehicleRegistration  year         y
+15       0.000000  0.000000          0.773269            0.037284  ...         0.373200             0.578007  2015  0.309106
+16       0.428571  0.504451          0.786307            0.061205  ...         0.590339             0.879505  2016  0.433907
+17       0.400000  0.138477          1.000000            0.074847  ...         0.657621             0.965409  2017  0.534623
+18       0.685714  0.925816          0.933967            0.000000  ...         0.733973             1.000000  2018  0.648283
+19       0.914286  1.000000          0.718190            0.007094  ...         0.806931             0.794861  2019  0.667733
+20       1.000000  0.657765          0.153190            1.000000  ...         0.000000             0.000000  2020  0.396315
+21       0.457143  0.421365          0.484187            0.390883  ...         0.512337             0.128244  2021  0.419911
+22       0.600000  0.504451          0.648453            0.046184  ...         0.889613             0.379875  2022  0.612617
+23       0.714286  0.527860          0.428610            0.007442  ...         1.000000             0.485874  2023  0.627155
+24       0.590476  0.484559          0.520416            0.148170  ...         0.800650             0.331331  2024  0.567302
+
+[10 rows x 10 columns]
+
+============================================================
+PART 1: EXPLORATORY DATA ANALYSIS (CLEAN DATA)
+============================================================
+
+Correlation with Target:
+y                     1.000000
+MaritimeTraffic       0.802336
+PassengersArriving    0.688129
+Poverty               0.642794
+SchoolingRate         0.546399
+Name: y, dtype: float64
+
+============================================================
+PART 2: REGRESSION ANALYSIS
+============================================================
+             Model          MAE         RMSE    Max_Error  R2
+L2 (Least Squares) 5.051515e-15 6.148120e-15 1.310063e-14 1.0
+L1 (Least Abs Dev) 2.768025e-08 3.062065e-08 4.291608e-08 1.0
+   L_inf (Minimax) 2.768025e-08 3.062065e-08 0.000000e+00 1.0
+Plot saved to 'Regression_Comparison_DropNA.png'
+
+============================================================
+PART 3: COUNTERFACTUAL SCENARIOS
+============================================================
+
+Q7a: 1% Increase
+Status: Optimal
+Recommended Changes:
+  VehicleRegistration: +0.0567 (Norm) | +0.06 (Real)
+Target: 1.0% -> Achieved: 1.00%
+
+Q7b: 5% Increase (Max 4 vars)
+Status: Optimal
+Recommended Changes:
+  VehicleRegistration: +0.1752 (Norm) | +0.18 (Real)
+  y: +0.1084 (Norm) | +0.05 (Real)
+Target: 5.0% -> Achieved: 5.00%
+
+Q8: 25% Increase (1 var)
+Status: Infeasible
+No feasible solution.
+
+Q10: Logic Test
+Status: Optimal
+Recommended Changes:
+  RenewableResources: +0.0010 (Norm) | +0.00 (Real)
+  VehicleRegistration: +0.0557 (Norm) | +0.06 (Real)
+Target: 1.0% -> Achieved: 1.00%
+
+Analysis Complete. Results saved to 'optimization_results_dropNA_normalized.txt'
