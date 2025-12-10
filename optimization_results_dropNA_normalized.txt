@@ -1,44 +1,23 @@
 =====================================================================
       OPTIMIZATION REPORT - STRATEGY B: LISTWISE DELETION            
-      (Prioritizing Data Integrity over Historical Length)           
-      With Normalization for Raw Data Compatibility                  
+      (With Separate Windows for Every Plot)                         
 =====================================================================
 
-Original Dataset shape: (25, 10)
-Original Years: 0 to 24
 
 --- Cleaning Strategy B: Dropping Rows with Missing Values ---
-Target column 'SustainableTourismIndex' not found. Calculating index from features...
-Dropped 15 rows containing missing values.
+Target column 'SustainableTourismIndex' not found. Calculating index...
 Final Clean Dataset shape: (10, 10)
-Remaining Years: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
-
---- Clean Data (All Rows) ---
-    SchoolingRate   Poverty  UnaccountedWater  OpenEstablishments  ...  MaritimeTraffic  VehicleRegistration  year         y
-15       0.000000  0.000000          0.773269            0.037284  ...         0.373200             0.578007  2015  0.313822
-16       0.428571  0.504451          0.786307            0.061205  ...         0.590339             0.879505  2016  0.482118
-17       0.400000  0.138477          1.000000            0.074847  ...         0.657621             0.965409  2017  0.512544
-18       0.685714  0.925816          0.933967            0.000000  ...         0.733973             1.000000  2018  0.609203
-19       0.914286  1.000000          0.718190            0.007094  ...         0.806931             0.794861  2019  0.643160
-20       1.000000  0.657765          0.153190            1.000000  ...         0.000000             0.000000  2020  0.405782
-21       0.457143  0.421365          0.484187            0.390883  ...         0.512337             0.128244  2021  0.451753
-22       0.600000  0.504451          0.648453            0.046184  ...         0.889613             0.379875  2022  0.631303
-23       0.714286  0.527860          0.428610            0.007442  ...         1.000000             0.485874  2023  0.630172
-24       0.590476  0.484559          0.520416            0.148170  ...         0.800650             0.331331  2024  0.595767
-
-[10 rows x 10 columns]
 
 ============================================================
-PART 1: EXPLORATORY DATA ANALYSIS (CLEAN DATA)
+PART 1: EXPLORATORY DATA ANALYSIS
 ============================================================
+Displaying Time Series Plot... (Close window to continue)
+Displaying Correlation Matrix... (Close window to continue)
 
-Correlation with Target:
-y                     1.000000
-MaritimeTraffic       0.841817
-PassengersArriving    0.679111
-Poverty               0.623904
-year                  0.562488
-Name: y, dtype: float64
+Generating Box Plots for Top Predictors...
+Displaying Box Plot for MaritimeTraffic... (Close window to continue)
+Displaying Box Plot for PassengersArriving... (Close window to continue)
+Displaying Box Plot for Poverty... (Close window to continue)
 
 ============================================================
 PART 2: REGRESSION ANALYSIS
@@ -55,37 +34,32 @@ MODEL EQUATIONS (Coefficients)
 [L_inf Minimax] y = -24.9051 + 0.1111*SchoolingRate + 0.1111*Poverty + 0.1312*UnaccountedWater + 0.1111*OpenEstablishments + 0.1195*RenewableResources + 0.1111*PassengersArriving + 0.1111*MaritimeTraffic + 0.1111*VehicleRegistration + 0.0123*year
 ------------------------------------------------------------
 
-             Model          MAE         RMSE    Max_Error  R2
-L2 (Least Squares) 3.030909e-15 3.538983e-15 6.605827e-15 1.0
-L1 (Least Abs Dev) 1.465890e-07 1.465943e-07 1.487415e-07 1.0
-   L_inf (Minimax) 1.465890e-07 1.465943e-07 0.000000e+00 1.0
+             Model          MAE  R2
+L2 (Least Squares) 3.030909e-15 1.0
+L1 (Least Abs Dev) 1.465890e-07 1.0
+   L_inf (Minimax) 1.465890e-07 1.0
+Displaying Regression Comparison... (Close window to continue)
 
 ============================================================
 PART 3: COUNTERFACTUAL SCENARIOS
 ============================================================
 
 Q7a: 1% Increase
-Status: Optimal
 Recommended Changes:
-  MaritimeTraffic: +0.0536 (Norm) | +0.05 (Real)
+  MaritimeTraffic: +0.05 (Real)
 Target: 1.0% -> Achieved: 1.00%
 
 Q7b: 5% Increase (Max 4 vars)
-Status: Optimal
 Recommended Changes:
-  OpenEstablishments: +0.1558 (Norm) | +0.16 (Real)
-  VehicleRegistration: +0.1123 (Norm) | +0.11 (Real)
+  OpenEstablishments: +0.16 (Real)
+  VehicleRegistration: +0.11 (Real)
 Target: 5.0% -> Achieved: 5.00%
 
 Q8: 25% Increase (1 var)
-Status: Infeasible
 No feasible solution.
 
 Q10: Logic Test
-Status: Optimal
 Recommended Changes:
-  RenewableResources: +0.0010 (Norm) | +0.00 (Real)
-  VehicleRegistration: +0.0526 (Norm) | +0.05 (Real)
+  RenewableResources: +0.00 (Real)
+  VehicleRegistration: +0.05 (Real)
 Target: 1.0% -> Achieved: 1.00%
-
-Analysis Complete. Results saved to 'optimization_results_dropNA_normalized.txt'
