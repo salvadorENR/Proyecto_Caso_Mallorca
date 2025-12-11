@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore')
 plt.style.use('seaborn-v0_8')
 
 # ==========================================
-# 0. LOGGING SETUP
+# 0. CONFIGURACIÓN DE REGISTRO (LOGGING)
 # ==========================================
 class Logger(object):
     def __init__(self, filename='optimization_results_dropNA_normalized.txt'):
@@ -32,15 +32,16 @@ class Logger(object):
 sys.stdout = Logger()
 
 print("=====================================================================")
-print("      OPTIMIZATION REPORT - STRATEGY B: LISTWISE DELETION            ")
-print("      (With Separate Windows for Every Plot)                         ")
+print("      INFORME DE OPTIMIZACIÓN - ESTRATEGIA B: ELIMINACIÓN POR LISTA  ")
+print("      (Priorizando Integridad de Datos sobre Longitud Histórica)     ")
+print("      (Con Ventanas Separadas para cada Gráfico)                     ")
 print("=====================================================================\n")
 
 # ==========================================
-# 1. LOAD DATA
+# 1. CARGA DE DATOS
 # ==========================================
 if not os.path.exists("Mallorca.csv"):
-    print("Error: 'Mallorca.csv' not found.")
+    print("Error: No se encontró el archivo 'Mallorca.csv'.")
     exit()
 
 df = pd.read_csv("Mallorca.csv")
@@ -50,24 +51,24 @@ if 'Year' in df.columns:
 df.sort_index(inplace=True)
 
 # ==========================================
-# 2. DATA CLEANING (ROBUST FIX)
+# 2. LIMPIEZA DE DATOS (ARREGLO ROBUSTO)
 # ==========================================
-print("\n--- Cleaning Strategy B: Dropping Rows with Missing Values ---")
+print("\n--- Estrategia de Limpieza B: Eliminación de filas con valores faltantes ---")
 
 target_col = 'SustainableTourismIndex'
 
-# 1. Drop NA rows first
+# 1. Eliminar filas con NA primero
 df_clean = df.dropna()
 
-# 2. SEPARATE TARGET (y) AND FEATURES (X)
+# 2. SEPARAR OBJETIVO (y) Y VARIABLES (X)
 if target_col in df_clean.columns:
     y = df_clean[target_col]
     X = df_clean.drop(columns=[target_col])
-    # Safety: Drop 'y' if it exists in X from a previous run
+    # Seguridad: Eliminar 'y' si existe en X de una ejecución anterior
     if 'y' in X.columns: X = X.drop(columns=['y'])
 else:
-    # If target missing, calculate it
-    print(f"Target column '{target_col}' not found. Calculating index...")
+    # Si falta el objetivo, calcularlo
+    print(f"Columna objetivo '{target_col}' no encontrada. Calculando índice...")
     X = df_clean.copy()
     if 'y' in X.columns: X = X.drop(columns=['y'])
     
@@ -75,103 +76,103 @@ else:
     weights = [1/len(X.columns)] * len(X.columns)
     y = X_norm_calc.dot(weights)
 
-# Add y back to df_clean for EDA purposes (but keep X pure for regression)
+# Añadir y de nuevo a df_clean para propósitos de EDA (pero mantener X puro para regresión)
 df_clean['y'] = y
 
-# Final Safety Check for Data Leakage
+# Chequeo Final de Seguridad para Fuga de Datos
 common_cols = set(X.columns).intersection(set(['y', target_col]))
 if common_cols:
     X = X.drop(columns=list(common_cols))
 
-print(f"Final Clean Dataset shape: {df_clean.shape}")
+print(f"Dimensiones del Dataset Final Limpio: {df_clean.shape}")
 
 # ==============================================================================
-# PART 1: EXPLORATORY DATA ANALYSIS (SEPARATE WINDOWS)
+# PARTE 1: ANÁLISIS EXPLORATORIO DE DATOS (VENTANAS SEPARADAS)
 # ==============================================================================
 def exploratory_data_analysis(df):
     print("\n" + "="*60)
-    print("PART 1: EXPLORATORY DATA ANALYSIS")
+    print("PARTE 1: ANÁLISIS EXPLORATORIO DE DATOS")
     print("="*60)
     
-    # --- Plot 1: Time Series ---
+    # --- Gráfico 1: Serie Temporal ---
     plt.figure(figsize=(10, 6))
     plt.plot(df.index, df['y'], marker='o', color='purple', linewidth=2)
-    plt.title('Sustainable Tourism Index over Time')
-    plt.ylabel('Index Value')
-    plt.xlabel('Year')
+    plt.title('Índice de Turismo Sostenible a lo largo del tiempo')
+    plt.ylabel('Valor del Índice')
+    plt.xlabel('Año')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('EDA_TimeSeries.png')
-    print("Displaying Time Series Plot... (Close window to continue)")
+    plt.savefig('EDA_SerieTemporal.png')
+    print("Mostrando Gráfico de Serie Temporal... (Cierre la ventana para continuar)")
     plt.show()
     
-    # --- Plot 2: Correlation Matrix ---
+    # --- Gráfico 2: Matriz de Correlación ---
     plt.figure(figsize=(10, 8))
     sns.heatmap(df.corr(), annot=True, fmt=".2f", cmap='coolwarm')
-    plt.title('Correlation Matrix')
+    plt.title('Matriz de Correlación')
     plt.tight_layout()
-    plt.savefig('EDA_Correlation.png')
-    print("Displaying Correlation Matrix... (Close window to continue)")
+    plt.savefig('EDA_Correlacion.png')
+    print("Mostrando Matriz de Correlación... (Cierre la ventana para continuar)")
     plt.show()
     
-    # --- B. Box Plots for Key Predictors ---
-    print("\nGenerating Box Plots for Top Predictors...")
+    # --- B. Diagramas de Caja para Predictores Clave ---
+    print("\nGenerando Diagramas de Caja para Predictores Principales...")
     key_vars = ['MaritimeTraffic', 'PassengersArriving', 'Poverty']
     valid_vars = [v for v in key_vars if v in df.columns]
     
     if valid_vars:
         for col in valid_vars:
-            # Create a separate figure for EACH variable
+            # Crear una figura separada para CADA variable
             plt.figure(figsize=(8, 6))
             
-            # Create bins for the continuous variable
+            # Crear bins para la variable continua
             plot_df = df.copy()
             try:
-                plot_df['Category'] = pd.qcut(plot_df[col], q=3, labels=["Low", "Medium", "High"])
+                plot_df['Category'] = pd.qcut(plot_df[col], q=3, labels=["Bajo", "Medio", "Alto"])
             except ValueError:
-                plot_df['Category'] = pd.cut(plot_df[col], bins=3, labels=["Low", "Medium", "High"])
+                plot_df['Category'] = pd.cut(plot_df[col], bins=3, labels=["Bajo", "Medio", "Alto"])
             
             sns.boxplot(x='Category', y='y', data=plot_df, palette="Set2")
             sns.stripplot(x='Category', y='y', data=plot_df, color='black', alpha=0.5)
             
-            plt.title(f'Impact of {col}\non Tourism Index')
-            plt.ylabel('Sustainable Tourism Index (y)')
-            plt.xlabel(f'{col} Level')
+            plt.title(f'Impacto de {col}\nen el Índice de Turismo')
+            plt.ylabel('Índice de Turismo Sostenible (y)')
+            plt.xlabel(f'Nivel de {col}')
             
             plt.tight_layout()
             plt.savefig(f'EDA_BoxPlot_{col}.png')
-            print(f"Displaying Box Plot for {col}... (Close window to continue)")
+            print(f"Mostrando Diagrama de Caja para {col}... (Cierre la ventana para continuar)")
             plt.show()
     else:
-        print("Warning: Requested variables for box plots not found in dataset.")
+        print("Advertencia: Las variables solicitadas para los diagramas de caja no se encontraron en el dataset.")
 
 exploratory_data_analysis(df_clean.copy())
 
 # ==============================================================================
-# PART 2: REGRESSION ANALYSIS
+# PARTE 2: ANÁLISIS DE REGRESIÓN
 # ==============================================================================
 def compare_regression_methods(X_data, y_data):
     print("\n" + "="*60)
-    print("PART 2: REGRESSION ANALYSIS")
+    print("PARTE 2: ANÁLISIS DE REGRESIÓN")
     print("="*60)
     
     n_samples, n_features = X_data.shape
     feature_names = X_data.columns.tolist()
     results_list = []
 
-    # --- 1. L2 Norm (OLS) ---
+    # --- 1. Norma L2 (Mínimos Cuadrados Ordinarios - OLS) ---
     l2_model = LinearRegression()
     l2_model.fit(X_data, y_data)
     l2_pred = l2_model.predict(X_data)
     
     results_list.append({
-        "Model": "L2 (Least Squares)", 
+        "Modelo": "L2 (Mínimos Cuadrados)", 
         "MAE": mean_absolute_error(y_data, l2_pred), 
         "R2": r2_score(y_data, l2_pred)
     })
 
-    # --- 2. L1 Norm (LAD) ---
-    prob_l1 = LpProblem("L1_Regression", LpMinimize)
+    # --- 2. Norma L1 (Mínimas Desviaciones Absolutas - LAD) ---
+    prob_l1 = LpProblem("Regresion_L1", LpMinimize)
     beta = [LpVariable(f"b_{j}", cat='Continuous') for j in range(n_features)]
     beta0 = LpVariable("b0", cat='Continuous')
     u = [LpVariable(f"u_{i}", lowBound=0) for i in range(n_samples)]
@@ -185,13 +186,13 @@ def compare_regression_methods(X_data, y_data):
     
     l1_pred = [value(beta0) + sum(value(beta[j]) * X_data.iloc[i,j] for j in range(n_features)) for i in range(n_samples)]
     results_list.append({
-        "Model": "L1 (Least Abs Dev)", 
+        "Modelo": "L1 (Mínimas Desv. Abs.)", 
         "MAE": mean_absolute_error(y_data, l1_pred), 
         "R2": r2_score(y_data, l1_pred)
     })
 
-    # --- 3. L_inf Norm (Minimax) ---
-    prob_inf = LpProblem("L_inf_Regression", LpMinimize)
+    # --- 3. Norma L-inf (Minimax) ---
+    prob_inf = LpProblem("Regresion_L_inf", LpMinimize)
     beta_inf = [LpVariable(f"bi_{j}", cat='Continuous') for j in range(n_features)]
     beta0_inf = LpVariable("bi0", cat='Continuous')
     max_dev = LpVariable("max_dev", lowBound=0)
@@ -205,14 +206,14 @@ def compare_regression_methods(X_data, y_data):
     
     linf_pred = [value(beta0_inf) + sum(value(beta_inf[j]) * X_data.iloc[i,j] for j in range(n_features)) for i in range(n_samples)]
     results_list.append({
-        "Model": "L_inf (Minimax)", 
+        "Modelo": "L_inf (Minimax)", 
         "MAE": mean_absolute_error(y_data, linf_pred), 
         "R2": r2_score(y_data, linf_pred)
     })
     
-    # --- PRINT EQUATIONS ---
+    # --- IMPRIMIR ECUACIONES ---
     print("\n" + "-"*30)
-    print("MODEL EQUATIONS (Coefficients)")
+    print("ECUACIONES DEL MODELO (Coeficientes)")
     print("-"*30)
     
     l2_coeffs = dict(zip(feature_names, l2_model.coef_))
@@ -225,24 +226,40 @@ def compare_regression_methods(X_data, y_data):
     print(f"\n[L_inf Minimax] y = {value(beta0_inf):.4f} + " + " + ".join([f"{coef:.4f}*{name}" for name, coef in linf_coeffs.items()]))
     print("-" * 60)
 
-    # Print Metrics
+    # Imprimir Métricas
     res_df = pd.DataFrame(results_list)
     print("\n" + res_df.to_string(index=False))
     
-    # Plot Comparison (Separate Window)
-    plt.figure(figsize=(10, 6))
-    plt.plot(y_data.index, y_data, 'ko-', label='Actual')
-    plt.plot(y_data.index, l2_pred, 'g--', label='L2 Pred')
-    plt.title("Regression Comparison")
+    # Gráfico de Comparación (Ventana Separada)
+    plt.figure(figsize=(12, 7))
+    
+    # 1. Datos Reales (Puntos Grandes)
+    plt.plot(y_data.index, y_data, 'ko', label='Real', markersize=10, zorder=5)
+    
+    # 2. L2 (Linea Gruesa, Verde)
+    plt.plot(y_data.index, l2_pred, 'g-', label='L2 (Mín Cuadrados)', linewidth=4, alpha=0.5)
+    
+    # 3. L1 (Linea Media, Roja Punteada)
+    plt.plot(y_data.index, l1_pred, 'r--', label='L1 (Mín Desv Abs)', linewidth=2.5)
+    
+    # 4. L-inf (Linea Fina, Azul)
+    plt.plot(y_data.index, linf_pred, 'b:', label='L-inf (Minimax)', linewidth=2)
+    
+    plt.title("Comparación de Modelos de Regresión (Superpuestos por Ajuste Perfecto)")
     plt.legend()
+    plt.ylabel('Valor del Índice')
+    plt.xlabel('Año')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
     plt.savefig('Regression_Comparison.png')
-    print("Displaying Regression Comparison... (Close window to continue)")
+    print("Mostrando Comparación de Regresión... (Cierre la ventana para continuar)")
     plt.show()
 
 compare_regression_methods(X, y)
 
 # ==============================================================================
-# PART 3: COUNTERFACTUAL OPTIMIZATION
+# PARTE 3: OPTIMIZACIÓN CONTRAFACTUAL
 # ==============================================================================
 def solve_counterfactual_robust(target_increase_pct, max_vars=None, logical_constraints=False, description=""):
     print(f"\n{description}")
@@ -258,7 +275,7 @@ def solve_counterfactual_robust(target_increase_pct, max_vars=None, logical_cons
     p = len(X.columns)
     feature_names = X.columns.tolist()
     
-    prob = LpProblem("Counterfactual_Optimization", LpMinimize)
+    prob = LpProblem("Optimizacion_Contrafactual", LpMinimize)
     
     beta = [LpVariable(f"beta_{i}", lowBound=0, upBound=1-x_current[i]) for i in range(p)]
     delta = [LpVariable(f"delta_{i}", cat='Binary') for i in range(p)]
@@ -290,22 +307,28 @@ def solve_counterfactual_robust(target_increase_pct, max_vars=None, logical_cons
     if prob.status == LpStatusOptimal:
         beta_values = [beta[i].varValue for i in range(p)]
         new_y = y_current + np.dot(beta_values, weights)
-        print("Recommended Changes:")
+        print("Cambios Recomendados:")
         for i in range(p):
             if delta[i].varValue > 0.5:
-                # Denormalize
+                # Desnormalizar
                 scale = X.iloc[:, i].max() - X.iloc[:, i].min()
                 if scale == 0: scale = 1
                 real_change = beta_values[i] * scale
                 print(f"  {feature_names[i]}: +{real_change:,.2f} (Real)")
-        print(f"Target: {target_increase_pct*100:.1f}% -> Achieved: {(new_y - y_current)/y_current*100:.2f}%")
+        print(f"Objetivo: {target_increase_pct*100:.1f}% -> Logrado: {(new_y - y_current)/y_current*100:.2f}%")
     else:
-        print("No feasible solution.")
+        print("No se encontró solución factible.")
 
 print("\n" + "="*60)
-print("PART 3: COUNTERFACTUAL SCENARIOS")
+print("PARTE 3: ESCENARIOS CONTRAFACTUALES")
 print("="*60)
-solve_counterfactual_robust(0.01, description="Q7a: 1% Increase")
-solve_counterfactual_robust(0.05, max_vars=4, description="Q7b: 5% Increase (Max 4 vars)")
-solve_counterfactual_robust(0.25, max_vars=1, description="Q8: 25% Increase (1 var)")
-solve_counterfactual_robust(0.01, logical_constraints=True, description="Q10: Logic Test")
+solve_counterfactual_robust(0.01, description="Q7a: Incremento del 1%")
+solve_counterfactual_robust(0.05, max_vars=4, description="Q7b: Incremento del 5% (Máx 4 vars)")
+solve_counterfactual_robust(0.25, max_vars=1, description="Q8: Incremento del 25% (1 var)")
+solve_counterfactual_robust(0.01, logical_constraints=True, description="Q10: Prueba Lógica")
+
+print("\n=====================================================================")
+print("                       ANÁLISIS COMPLETO                             ")
+print("Todos los resultados guardados en: 'optimization_results_dropNA_normalized.txt'")
+print("Visualizaciones guardadas como: 'EDA_*.png', 'Regression_Comparison.png'")
+print("=====================================================================")

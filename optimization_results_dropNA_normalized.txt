@@ -1,30 +1,31 @@
 =====================================================================
-      OPTIMIZATION REPORT - STRATEGY B: LISTWISE DELETION            
-      (With Separate Windows for Every Plot)                         
+      INFORME DE OPTIMIZACIÓN - ESTRATEGIA B: ELIMINACIÓN POR LISTA  
+      (Priorizando Integridad de Datos sobre Longitud Histórica)     
+      (Con Ventanas Separadas para cada Gráfico)                     
 =====================================================================
 
 
---- Cleaning Strategy B: Dropping Rows with Missing Values ---
-Target column 'SustainableTourismIndex' not found. Calculating index...
-Final Clean Dataset shape: (10, 10)
+--- Estrategia de Limpieza B: Eliminación de filas con valores faltantes ---
+Columna objetivo 'SustainableTourismIndex' no encontrada. Calculando índice...
+Dimensiones del Dataset Final Limpio: (10, 10)
 
 ============================================================
-PART 1: EXPLORATORY DATA ANALYSIS
+PARTE 1: ANÁLISIS EXPLORATORIO DE DATOS
 ============================================================
-Displaying Time Series Plot... (Close window to continue)
-Displaying Correlation Matrix... (Close window to continue)
+Mostrando Gráfico de Serie Temporal... (Cierre la ventana para continuar)
+Mostrando Matriz de Correlación... (Cierre la ventana para continuar)
 
-Generating Box Plots for Top Predictors...
-Displaying Box Plot for MaritimeTraffic... (Close window to continue)
-Displaying Box Plot for PassengersArriving... (Close window to continue)
-Displaying Box Plot for Poverty... (Close window to continue)
+Generando Diagramas de Caja para Predictores Principales...
+Mostrando Diagrama de Caja para MaritimeTraffic... (Cierre la ventana para continuar)
+Mostrando Diagrama de Caja para PassengersArriving... (Cierre la ventana para continuar)
+Mostrando Diagrama de Caja para Poverty... (Cierre la ventana para continuar)
 
 ============================================================
-PART 2: REGRESSION ANALYSIS
+PARTE 2: ANÁLISIS DE REGRESIÓN
 ============================================================
 
 ------------------------------
-MODEL EQUATIONS (Coefficients)
+ECUACIONES DEL MODELO (Coeficientes)
 ------------------------------
 
 [L2 OLS] y = -24.9051 + 0.1111*SchoolingRate + 0.1111*Poverty + 0.1312*UnaccountedWater + 0.1111*OpenEstablishments + 0.1195*RenewableResources + 0.1111*PassengersArriving + 0.1111*MaritimeTraffic + 0.1111*VehicleRegistration + 0.0123*year
@@ -34,32 +35,38 @@ MODEL EQUATIONS (Coefficients)
 [L_inf Minimax] y = -24.9051 + 0.1111*SchoolingRate + 0.1111*Poverty + 0.1312*UnaccountedWater + 0.1111*OpenEstablishments + 0.1195*RenewableResources + 0.1111*PassengersArriving + 0.1111*MaritimeTraffic + 0.1111*VehicleRegistration + 0.0123*year
 ------------------------------------------------------------
 
-             Model          MAE  R2
-L2 (Least Squares) 3.463896e-15 1.0
-L1 (Least Abs Dev) 1.465890e-07 1.0
-   L_inf (Minimax) 1.465890e-07 1.0
-Displaying Regression Comparison... (Close window to continue)
+                 Modelo          MAE  R2
+ L2 (Mínimos Cuadrados) 3.030909e-15 1.0
+L1 (Mínimas Desv. Abs.) 1.465890e-07 1.0
+        L_inf (Minimax) 1.465890e-07 1.0
+Mostrando Comparación de Regresión... (Cierre la ventana para continuar)
 
 ============================================================
-PART 3: COUNTERFACTUAL SCENARIOS
+PARTE 3: ESCENARIOS CONTRAFACTUALES
 ============================================================
 
-Q7a: 1% Increase
-Recommended Changes:
+Q7a: Incremento del 1%
+Cambios Recomendados:
   MaritimeTraffic: +0.05 (Real)
-Target: 1.0% -> Achieved: 1.00%
+Objetivo: 1.0% -> Logrado: 1.00%
 
-Q7b: 5% Increase (Max 4 vars)
-Recommended Changes:
+Q7b: Incremento del 5% (Máx 4 vars)
+Cambios Recomendados:
   OpenEstablishments: +0.16 (Real)
   VehicleRegistration: +0.11 (Real)
-Target: 5.0% -> Achieved: 5.00%
+Objetivo: 5.0% -> Logrado: 5.00%
 
-Q8: 25% Increase (1 var)
-No feasible solution.
+Q8: Incremento del 25% (1 var)
+No se encontró solución factible.
 
-Q10: Logic Test
-Recommended Changes:
+Q10: Prueba Lógica
+Cambios Recomendados:
   RenewableResources: +0.00 (Real)
   VehicleRegistration: +0.05 (Real)
-Target: 1.0% -> Achieved: 1.00%
+Objetivo: 1.0% -> Logrado: 1.00%
+
+=====================================================================
+                       ANÁLISIS COMPLETO                             
+Todos los resultados guardados en: 'optimization_results_dropNA_normalized.txt'
+Visualizaciones guardadas como: 'EDA_*.png', 'Regression_Comparison.png'
+=====================================================================
