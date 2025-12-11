@@ -35,7 +35,7 @@ MODEL EQUATIONS (Coefficients)
 ------------------------------------------------------------
 
              Model          MAE  R2
-L2 (Least Squares) 3.030909e-15 1.0
+L2 (Least Squares) 3.463896e-15 1.0
 L1 (Least Abs Dev) 1.465890e-07 1.0
    L_inf (Minimax) 1.465890e-07 1.0
 Displaying Regression Comparison... (Close window to continue)
