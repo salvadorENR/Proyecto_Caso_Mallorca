@@ -5,7 +5,7 @@ MAESTRÍA EN ESTADÍSTICA Y CIENCIA DE DATOS - SEMINARIO II
 
 RESUMEN EJECUTIVO
 --------------------------------------------------
-Fecha de análisis: 2025-12-13 18:08:37
+Fecha de análisis: 2025-12-14 15:29:11
 Observaciones: 10 años (2015-2024)
 Variables analizadas: 8 indicadores + índice y
 Estrategia de limpieza: Eliminación por lista (listwise deletion)

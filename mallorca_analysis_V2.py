@@ -43,78 +43,90 @@ print(df_clean[['year', 'y']].tail())
 # --- 2. Análisis Exploratorio de Datos (EDA) ---
 print("\n--- 2. Análisis Exploratorio de Datos (EDA) ---")
 
-# Configurar figura para EDA
-fig_eda, axes_eda = plt.subplots(2, 3, figsize=(15, 10))
-fig_eda.suptitle('Análisis Exploratorio de Datos - Índice de Turismo Sostenible', 
-                 fontsize=14, fontweight='bold')
-
-# 2.1 Evolución temporal del índice y
+# GRÁFICO 1: Evolución temporal del índice y
+print("\nGráfico 1: Evolución temporal del índice y")
 years = df_clean['year'].values
 y = df_clean['y'].values
 
-axes_eda[0, 0].plot(years, y, 'bo-', linewidth=2, markersize=8, markerfacecolor='white')
-axes_eda[0, 0].set_title('Evolución del Índice de Turismo Sostenible')
-axes_eda[0, 0].set_xlabel('Año')
-axes_eda[0, 0].set_ylabel('Índice y')
-axes_eda[0, 0].grid(True, alpha=0.3)
-axes_eda[0, 0].set_xticks(years)
-axes_eda[0, 0].tick_params(axis='x', rotation=45)
+plt.figure(figsize=(10, 6))
+plt.plot(years, y, 'bo-', linewidth=2, markersize=8, markerfacecolor='white')
+plt.title('Evolución del Índice de Turismo Sostenible', fontsize=14, fontweight='bold')
+plt.xlabel('Año')
+plt.ylabel('Índice y')
+plt.grid(True, alpha=0.3)
+plt.xticks(years, rotation=45)
+plt.tight_layout()
+plt.show()
 
-# 2.2 Histograma del índice y
-axes_eda[0, 1].hist(y, bins=6, color='lightblue', edgecolor='black', alpha=0.7)
-axes_eda[0, 1].axvline(np.mean(y), color='red', linestyle='--', label=f'Media: {np.mean(y):.2f}')
-axes_eda[0, 1].axvline(np.median(y), color='green', linestyle='--', label=f'Mediana: {np.median(y):.2f}')
-axes_eda[0, 1].set_title('Distribución del Índice y')
-axes_eda[0, 1].set_xlabel('Valor del índice')
-axes_eda[0, 1].set_ylabel('Frecuencia')
-axes_eda[0, 1].legend()
-axes_eda[0, 1].grid(True, alpha=0.3)
+# GRÁFICO 2: Histograma del índice y
+print("\nGráfico 2: Distribución del índice y")
+plt.figure(figsize=(10, 6))
+plt.hist(y, bins=6, color='lightblue', edgecolor='black', alpha=0.7)
+plt.axvline(np.mean(y), color='red', linestyle='--', label=f'Media: {np.mean(y):.2f}')
+plt.axvline(np.median(y), color='green', linestyle='--', label=f'Mediana: {np.median(y):.2f}')
+plt.title('Distribución del Índice de Turismo Sostenible', fontsize=14, fontweight='bold')
+plt.xlabel('Valor del índice')
+plt.ylabel('Frecuencia')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
 
-# 2.3 Matriz de correlación
+# GRÁFICO 3: Matriz de correlación
+print("\nGráfico 3: Matriz de correlación")
 features_corr = ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments',
                  'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 
                  'VehicleRegistration', 'y']
 
 corr_matrix = df_clean[features_corr].corr()
 mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-sns.heatmap(corr_matrix, mask=mask, annot=True, fmt='.2f', cmap='coolwarm', 
-            center=0, square=True, cbar_kws={"shrink": 0.8}, ax=axes_eda[0, 2])
-axes_eda[0, 2].set_title('Matriz de Correlación')
-axes_eda[0, 2].tick_params(axis='x', rotation=45)
-axes_eda[0, 2].tick_params(axis='y', rotation=0)
 
-# 2.4 Diagramas de caja para variables principales
+plt.figure(figsize=(12, 10))
+sns.heatmap(corr_matrix, mask=mask, annot=True, fmt='.2f', cmap='coolwarm', 
+            center=0, square=True, cbar_kws={"shrink": 0.8})
+plt.title('Matriz de Correlación - Variables del Estudio', fontsize=14, fontweight='bold')
+plt.xticks(rotation=45)
+plt.yticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+# GRÁFICO 4: Diagramas de caja para variables principales
+print("\nGráfico 4: Diagramas de caja para variables principales")
 box_vars = ['PassengersArriving', 'MaritimeTraffic', 'RenewableResources']
 box_data = [df_clean[var].dropna() for var in box_vars]
-bp = axes_eda[1, 0].boxplot(box_data, patch_artist=True)
-axes_eda[1, 0].set_title('Diagramas de Caja - Variables Principales')
-axes_eda[1, 0].set_xticklabels([var[:15] for var in box_vars], rotation=45)
-axes_eda[1, 0].set_ylabel('Valor (escala 0-1)')
-axes_eda[1, 0].grid(True, alpha=0.3)
+
+plt.figure(figsize=(10, 6))
+bp = plt.boxplot(box_data, patch_artist=True)
+plt.title('Diagramas de Caja - Variables Principales', fontsize=14, fontweight='bold')
+plt.xticks(range(1, len(box_vars) + 1), [var[:15] for var in box_vars], rotation=45)
+plt.ylabel('Valor (escala 0-1)')
+plt.grid(True, alpha=0.3)
 
 for patch in bp['boxes']:
     patch.set_facecolor('lightgreen')
 
-# 2.5 Relaciones entre y y variables clave
+plt.tight_layout()
+plt.show()
+
+# GRÁFICOS 5, 6, 7: Relaciones entre y y variables clave
+print("\nGráficos 5-7: Relaciones entre y y variables clave")
 for idx, var in enumerate(box_vars):
-    row, col = divmod(idx + 1, 3)
-    axes_eda[row, col].scatter(df_clean[var], df_clean['y'], alpha=0.6)
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df_clean[var], df_clean['y'], alpha=0.6, s=80)
     
     # Línea de tendencia
     z = np.polyfit(df_clean[var], df_clean['y'], 1)
     p = np.poly1d(z)
     x_range = np.linspace(df_clean[var].min(), df_clean[var].max(), 100)
-    axes_eda[row, col].plot(x_range, p(x_range), "r--", alpha=0.8)
+    plt.plot(x_range, p(x_range), "r--", alpha=0.8, linewidth=2)
     
     corr = df_clean[var].corr(df_clean['y'])
-    axes_eda[row, col].set_title(f'y vs {var[:12]}\nCorr: {corr:.2f}')
-    axes_eda[row, col].set_xlabel(var[:12])
-    if col == 0:
-        axes_eda[row, col].set_ylabel('Índice y')
-    axes_eda[row, col].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+    plt.title(f'Relación: y vs {var}\nCorrelación: {corr:.2f}', fontsize=14, fontweight='bold')
+    plt.xlabel(var)
+    plt.ylabel('Índice de Turismo Sostenible (y)')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
 # --- 3. Preparación de datos para regresión ---
 print("\n--- 3. Preparación de datos para regresión ---")
@@ -275,40 +287,42 @@ print(f"  R²:                {r2_linf:.6f}")
 # 4.5 Comparación gráfica
 print("\n--- 4.5 Comparación gráfica de modelos ---")
 
-fig_compare, axes_compare = plt.subplots(1, 2, figsize=(14, 6))
+# GRÁFICO 8: Valores reales vs predichos
+print("\nGráfico 8: Valores reales vs predichos")
+plt.figure(figsize=(12, 7))
+plt.plot(years, y, 'ko-', linewidth=3, markersize=10, label='Valores Reales', markerfacecolor='white')
+plt.plot(years, y_pred_l2, 'bs--', markersize=8, label='Modelo L2 (Mínimos Cuadrados)', alpha=0.8)
+plt.plot(years, y_pred_l1, 'r^--', markersize=8, label='Modelo L1 (Mín. Desv. Abs.)', alpha=0.8)
+plt.plot(years, y_pred_linf, 'gD--', markersize=8, label='Modelo L∞ (Minimax)', alpha=0.8)
+plt.title('Comparación de Modelos de Regresión\nValores Reales vs Predichos', fontsize=14, fontweight='bold')
+plt.xlabel('Año')
+plt.ylabel('Índice de Turismo Sostenible')
+plt.legend(loc='best')
+plt.grid(True, alpha=0.3)
+plt.xticks(years, rotation=45)
+plt.tight_layout()
+plt.show()
 
-# Gráfico 1: Valores reales vs predichos
-axes_compare[0].plot(years, y, 'ko-', linewidth=2, markersize=8, label='Real', markerfacecolor='white')
-axes_compare[0].plot(years, y_pred_l2, 'bs--', markersize=6, label='L2 Pred', alpha=0.8)
-axes_compare[0].plot(years, y_pred_l1, 'r^--', markersize=6, label='L1 Pred', alpha=0.8)
-axes_compare[0].plot(years, y_pred_linf, 'gD--', markersize=6, label='L∞ Pred', alpha=0.8)
-axes_compare[0].set_title('Comparación: Valores Reales vs Predichos')
-axes_compare[0].set_xlabel('Año')
-axes_compare[0].set_ylabel('Índice de Turismo Sostenible')
-axes_compare[0].legend()
-axes_compare[0].grid(True, alpha=0.3)
-axes_compare[0].set_xticks(years)
-axes_compare[0].tick_params(axis='x', rotation=45)
-
-# Gráfico 2: Residuales
+# GRÁFICO 9: Residuales por modelo
+print("\nGráfico 9: Residuales por modelo")
 residuals_l2 = y - y_pred_l2
 residuals_l1 = y - y_pred_l1
 residuals_linf = y - y_pred_linf
 
 x_pos = np.arange(len(years))
 width = 0.25
-axes_compare[1].bar(x_pos - width, residuals_l2, width, label='L2', color='blue', alpha=0.7)
-axes_compare[1].bar(x_pos, residuals_l1, width, label='L1', color='red', alpha=0.7)
-axes_compare[1].bar(x_pos + width, residuals_linf, width, label='L∞', color='green', alpha=0.7)
-axes_compare[1].axhline(y=0, color='k', linestyle='-', alpha=0.3)
-axes_compare[1].set_title('Residuales por Modelo')
-axes_compare[1].set_xlabel('Observación (por año)')
-axes_compare[1].set_ylabel('Residual (y - ŷ)')
-axes_compare[1].set_xticks(x_pos)
-axes_compare[1].set_xticklabels(years, rotation=45)
-axes_compare[1].legend()
-axes_compare[1].grid(True, alpha=0.3)
 
+plt.figure(figsize=(14, 7))
+plt.bar(x_pos - width, residuals_l2, width, label='L2 (Mínimos Cuadrados)', color='blue', alpha=0.7)
+plt.bar(x_pos, residuals_l1, width, label='L1 (Mín. Desv. Abs.)', color='red', alpha=0.7)
+plt.bar(x_pos + width, residuals_linf, width, label='L∞ (Minimax)', color='green', alpha=0.7)
+plt.axhline(y=0, color='k', linestyle='-', alpha=0.3, linewidth=1)
+plt.title('Residuales por Modelo de Regresión', fontsize=14, fontweight='bold')
+plt.xlabel('Año')
+plt.ylabel('Residual (y - ŷ)')
+plt.xticks(x_pos, years, rotation=45)
+plt.legend(loc='best')
+plt.grid(True, alpha=0.3, axis='y')
 plt.tight_layout()
 plt.show()
 
@@ -734,7 +748,7 @@ print("\n" + "="*80)
 print("PRÁCTICA COMPLETADA EXITOSAMENTE")
 print("="*80)
 print("\nSe ha ejecutado:")
-print("✓ Análisis Exploratorio de Datos (6 gráficos)")
+print("✓ Análisis Exploratorio de Datos (9 gráficos independientes)")
 print("✓ Tres modelos de regresión (L1, L2, L∞)")
 print("✓ Optimización contrafactual para 4 escenarios")
 print("✓ Resultados guardados en archivo de texto")
