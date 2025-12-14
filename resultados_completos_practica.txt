@@ -1,0 +1,74 @@
+================================================================================
+PRÁCTICA DE OPTIMIZACIÓN - TURISMO SOSTENIBLE EN MALLORCA
+MAESTRÍA EN ESTADÍSTICA Y CIENCIA DE DATOS - SEMINARIO II
+================================================================================
+
+RESUMEN EJECUTIVO
+--------------------------------------------------
+Fecha de análisis: 2025-12-13 18:08:37
+Observaciones: 10 años (2015-2024)
+Variables analizadas: 8 indicadores + índice y
+Estrategia de limpieza: Eliminación por lista (listwise deletion)
+
+PARTE 1: REGRESIÓN LINEAL
+--------------------------------------------------
+Modelos implementados:
+  1. L2: Mínimos cuadrados (ecuación normal)
+  2. L1: Mínimas desviaciones absolutas (programación lineal)
+  3. L∞: Desviación absoluta máxima (programación lineal)
+
+Ecuaciones de regresión:
+----------------------------------------
+MODELO L2 (Mínimos Cuadrados):
+y = 0.113607 + ( +0.594474)·SchoolingRate + ( -0.481682)·Poverty + ( +1.529858)·UnaccountedWater + ( +0.646464)·OpenEstablishments + ( -1.635346)·RenewableResources + ( +2.082627)·PassengersArriving + ( -0.038840)·MaritimeTraffic + ( -2.397313)·VehicleRegistration 
+MAE: 0.005500, R²: 0.994863
+
+MODELO L1 (Mínimas Desv. Absolutas):
+y = 0.104611 + ( +0.574996)·SchoolingRate + ( -0.475305)·Poverty + ( +1.529643)·UnaccountedWater + ( +0.671191)·OpenEstablishments + ( -1.636215)·RenewableResources + ( +2.086323)·PassengersArriving + ( -0.009261)·MaritimeTraffic + ( -2.405572)·VehicleRegistration 
+MAE: 0.003667, R²: 0.993151
+
+MODELO L∞ (Minimax):
+y = 0.286098 + ( +0.754138)·SchoolingRate + ( -0.501096)·Poverty + ( +1.352677)·UnaccountedWater + ( +0.236241)·OpenEstablishments + ( -1.426979)·RenewableResources + ( +1.605618)·PassengersArriving + ( -0.076872)·MaritimeTraffic + ( -2.080211)·VehicleRegistration 
+MAE: 0.018333, Error máximo: 0.018333, R²: 0.982877
+
+PARTE 2: OPTIMIZACIÓN CONTRAFACTUAL
+--------------------------------------------------
+Índice base (2024): y = 0.4900
+Parámetros: p=8, wⱼ=1/8, a=0.5
+
+RESULTADOS PREGUNTA 7a (1% aumento):
+  Logrado: +1.00%
+  • VehicleRegistration: 0.331→0.371 (Δ=+0.039)
+
+RESULTADOS PREGUNTA 7b (5% aumento, máx 4 variables):
+  Logrado: +5.00%
+  • OpenEstablishments: 0.148→0.169 (Δ=+0.021)
+  • VehicleRegistration: 0.331→0.507 (Δ=+0.175)
+
+RESULTADOS PREGUNTA 8 (25% aumento, 1 variable):
+  Variable recomendada: VehicleRegistration
+  Aumento máximo posible: 4.5%
+  ✗ No se puede lograr 25% con una sola variable
+
+RESULTADOS PREGUNTA 10 (restricciones lógicas):
+  Logrado: +1.00%
+  Restricciones aplicadas:
+    1. Si MaritimeTraffic → PassengersArriving
+    2. Uno solo: SchoolingRate XOR RenewableResources
+    3. Al menos una: Poverty OR VehicleRegistration
+  Variables modificadas:
+    • VehicleRegistration
+
+CONCLUSIONES
+--------------------------------------------------
+1. Los tres modelos de regresión producen resultados similares debido a n≈p
+2. La optimización contrafactual permite identificar cambios mínimos
+3. Para aumentos pequeños (1-5%), es posible con cambios moderados
+4. Para aumentos grandes (25%), se necesitan cambios en múltiples variables
+5. Las restricciones lógicas añaden complejidad pero son modelables
+
+RECOMENDACIONES PARA EL OBSERVATORIO DE TURISMO SOSTENIBLE:
+1. Priorizar variables con mayor impacto positivo según modelos
+2. Considerar la factibilidad de los cambios sugeridos
+3. Evaluar trade-offs entre número de variables y magnitud de cambios
+4. Realizar análisis de sensibilidad con diferentes valores de 'a'

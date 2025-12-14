@@ -1,334 +1,741 @@
 import pandas as pd
 import numpy as np
+import pulp
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pulp import *
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, mean_absolute_error, max_error, r2_score
-import warnings
-import sys
-import os
+from sklearn.preprocessing import MinMaxScaler
 
-warnings.filterwarnings('ignore')
-plt.style.use('seaborn-v0_8')
+print("="*80)
+print("PRÁCTICA DE OPTIMIZACIÓN - TURISMO SOSTENIBLE EN MALLORCA")
+print("MAESTRÍA EN ESTADÍSTICA Y CIENCIA DE DATOS - SEMINARIO II")
+print("="*80)
 
-# ==========================================
-# 0. CONFIGURACIÓN DE REGISTRO (LOGGING)
-# ==========================================
-class Logger(object):
-    def __init__(self, filename='optimization_results_dropNA_normalized.txt'):
-        self.terminal = sys.stdout
-        self.log = open(filename, "w", encoding='utf-8', buffering=1)
+# ============================================================================
+# PARTE 1: ANÁLISIS EXPLORATORIO Y MODELOS DE REGRESIÓN
+# ============================================================================
+print("\n" + "="*60)
+print("PARTE 1: ANÁLISIS EXPLORATORIO Y MODELOS DE REGRESIÓN")
+print("="*60)
 
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
-        self.log.flush()
-
-    def flush(self):
-        self.terminal.flush()
-        self.log.flush()
-
-sys.stdout = Logger()
-
-print("=====================================================================")
-print("      INFORME DE OPTIMIZACIÓN - ESTRATEGIA B: ELIMINACIÓN POR LISTA  ")
-print("      (Priorizando Integridad de Datos sobre Longitud Histórica)     ")
-print("      (Con Ventanas Separadas para cada Gráfico)                     ")
-print("=====================================================================\n")
-
-# ==========================================
-# 1. CARGA DE DATOS
-# ==========================================
-if not os.path.exists("Mallorca.csv"):
-    print("Error: No se encontró el archivo 'Mallorca.csv'.")
-    exit()
-
+# --- 1. Carga y limpieza de datos ---
+print("\n--- 1. Carga y limpieza de datos ---")
 df = pd.read_csv("Mallorca.csv")
 
-if 'Year' in df.columns:
-    df.set_index('Year', inplace=True)
-df.sort_index(inplace=True)
+print(f"Dataset original: {df.shape[0]} filas × {df.shape[1]} columnas")
+print(f"Variables: {list(df.columns)}")
 
-# ==========================================
-# 2. LIMPIEZA DE DATOS (ARREGLO ROBUSTO)
-# ==========================================
-print("\n--- Estrategia de Limpieza B: Eliminación de filas con valores faltantes ---")
+# Verificar valores faltantes
+print("\nValores faltantes por variable:")
+for col in df.columns:
+    missing = df[col].isnull().sum()
+    if missing > 0:
+        print(f"  {col}: {missing} valores ({missing/len(df)*100:.1f}%)")
 
-target_col = 'SustainableTourismIndex'
-
-# 1. Eliminar filas con NA primero
+# Estrategia: Eliminación por lista (mantener solo observaciones completas)
 df_clean = df.dropna()
+print(f"\n✅ Dataset limpio: {df_clean.shape[0]} observaciones completas")
+print(f"Años disponibles: {sorted(df_clean['year'].unique())}")
 
-# 2. SEPARAR OBJETIVO (y) Y VARIABLES (X)
-if target_col in df_clean.columns:
-    y = df_clean[target_col]
-    X = df_clean.drop(columns=[target_col])
-    # Seguridad: Eliminar 'y' si existe en X de una ejecución anterior
-    if 'y' in X.columns: X = X.drop(columns=['y'])
-else:
-    # Si falta el objetivo, calcularlo
-    print(f"Columna objetivo '{target_col}' no encontrada. Calculando índice...")
-    X = df_clean.copy()
-    if 'y' in X.columns: X = X.drop(columns=['y'])
-    
-    X_norm_calc = (X - X.min()) / (X.max() - X.min())
-    weights = [1/len(X.columns)] * len(X.columns)
-    y = X_norm_calc.dot(weights)
+# Mostrar datos limpios
+print("\nDatos limpios (últimos años):")
+print(df_clean[['year', 'y']].tail())
 
-# Añadir y de nuevo a df_clean para propósitos de EDA (pero mantener X puro para regresión)
-df_clean['y'] = y
+# --- 2. Análisis Exploratorio de Datos (EDA) ---
+print("\n--- 2. Análisis Exploratorio de Datos (EDA) ---")
 
-# Chequeo Final de Seguridad para Fuga de Datos
-common_cols = set(X.columns).intersection(set(['y', target_col]))
-if common_cols:
-    X = X.drop(columns=list(common_cols))
+# Configurar figura para EDA
+fig_eda, axes_eda = plt.subplots(2, 3, figsize=(15, 10))
+fig_eda.suptitle('Análisis Exploratorio de Datos - Índice de Turismo Sostenible', 
+                 fontsize=14, fontweight='bold')
 
-print(f"Dimensiones del Dataset Final Limpio: {df_clean.shape}")
+# 2.1 Evolución temporal del índice y
+years = df_clean['year'].values
+y = df_clean['y'].values
 
-# ==============================================================================
-# PARTE 1: ANÁLISIS EXPLORATORIO DE DATOS (VENTANAS SEPARADAS)
-# ==============================================================================
-def exploratory_data_analysis(df):
-    print("\n" + "="*60)
-    print("PARTE 1: ANÁLISIS EXPLORATORIO DE DATOS")
-    print("="*60)
+axes_eda[0, 0].plot(years, y, 'bo-', linewidth=2, markersize=8, markerfacecolor='white')
+axes_eda[0, 0].set_title('Evolución del Índice de Turismo Sostenible')
+axes_eda[0, 0].set_xlabel('Año')
+axes_eda[0, 0].set_ylabel('Índice y')
+axes_eda[0, 0].grid(True, alpha=0.3)
+axes_eda[0, 0].set_xticks(years)
+axes_eda[0, 0].tick_params(axis='x', rotation=45)
+
+# 2.2 Histograma del índice y
+axes_eda[0, 1].hist(y, bins=6, color='lightblue', edgecolor='black', alpha=0.7)
+axes_eda[0, 1].axvline(np.mean(y), color='red', linestyle='--', label=f'Media: {np.mean(y):.2f}')
+axes_eda[0, 1].axvline(np.median(y), color='green', linestyle='--', label=f'Mediana: {np.median(y):.2f}')
+axes_eda[0, 1].set_title('Distribución del Índice y')
+axes_eda[0, 1].set_xlabel('Valor del índice')
+axes_eda[0, 1].set_ylabel('Frecuencia')
+axes_eda[0, 1].legend()
+axes_eda[0, 1].grid(True, alpha=0.3)
+
+# 2.3 Matriz de correlación
+features_corr = ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments',
+                 'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 
+                 'VehicleRegistration', 'y']
+
+corr_matrix = df_clean[features_corr].corr()
+mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+sns.heatmap(corr_matrix, mask=mask, annot=True, fmt='.2f', cmap='coolwarm', 
+            center=0, square=True, cbar_kws={"shrink": 0.8}, ax=axes_eda[0, 2])
+axes_eda[0, 2].set_title('Matriz de Correlación')
+axes_eda[0, 2].tick_params(axis='x', rotation=45)
+axes_eda[0, 2].tick_params(axis='y', rotation=0)
+
+# 2.4 Diagramas de caja para variables principales
+box_vars = ['PassengersArriving', 'MaritimeTraffic', 'RenewableResources']
+box_data = [df_clean[var].dropna() for var in box_vars]
+bp = axes_eda[1, 0].boxplot(box_data, patch_artist=True)
+axes_eda[1, 0].set_title('Diagramas de Caja - Variables Principales')
+axes_eda[1, 0].set_xticklabels([var[:15] for var in box_vars], rotation=45)
+axes_eda[1, 0].set_ylabel('Valor (escala 0-1)')
+axes_eda[1, 0].grid(True, alpha=0.3)
+
+for patch in bp['boxes']:
+    patch.set_facecolor('lightgreen')
+
+# 2.5 Relaciones entre y y variables clave
+for idx, var in enumerate(box_vars):
+    row, col = divmod(idx + 1, 3)
+    axes_eda[row, col].scatter(df_clean[var], df_clean['y'], alpha=0.6)
     
-    # --- Gráfico 1: Serie Temporal ---
-    plt.figure(figsize=(10, 6))
-    plt.plot(df.index, df['y'], marker='o', color='purple', linewidth=2)
-    plt.title('Índice de Turismo Sostenible a lo largo del tiempo')
-    plt.ylabel('Valor del Índice')
-    plt.xlabel('Año')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig('EDA_SerieTemporal.png')
-    print("Mostrando Gráfico de Serie Temporal... (Cierre la ventana para continuar)")
-    plt.show()
+    # Línea de tendencia
+    z = np.polyfit(df_clean[var], df_clean['y'], 1)
+    p = np.poly1d(z)
+    x_range = np.linspace(df_clean[var].min(), df_clean[var].max(), 100)
+    axes_eda[row, col].plot(x_range, p(x_range), "r--", alpha=0.8)
     
-    # --- Gráfico 2: Matriz de Correlación ---
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(df.corr(), annot=True, fmt=".2f", cmap='coolwarm')
-    plt.title('Matriz de Correlación')
-    plt.tight_layout()
-    plt.savefig('EDA_Correlacion.png')
-    print("Mostrando Matriz de Correlación... (Cierre la ventana para continuar)")
-    plt.show()
-    
-    # --- B. Diagramas de Caja para Predictores Clave ---
-    print("\nGenerando Diagramas de Caja para Predictores Principales...")
-    key_vars = ['MaritimeTraffic', 'PassengersArriving', 'Poverty']
-    valid_vars = [v for v in key_vars if v in df.columns]
-    
-    if valid_vars:
-        for col in valid_vars:
-            # Crear una figura separada para CADA variable
-            plt.figure(figsize=(8, 6))
-            
-            # Crear bins para la variable continua
-            plot_df = df.copy()
-            try:
-                plot_df['Category'] = pd.qcut(plot_df[col], q=3, labels=["Bajo", "Medio", "Alto"])
-            except ValueError:
-                plot_df['Category'] = pd.cut(plot_df[col], bins=3, labels=["Bajo", "Medio", "Alto"])
-            
-            sns.boxplot(x='Category', y='y', data=plot_df, palette="Set2")
-            sns.stripplot(x='Category', y='y', data=plot_df, color='black', alpha=0.5)
-            
-            plt.title(f'Impacto de {col}\nen el Índice de Turismo')
-            plt.ylabel('Índice de Turismo Sostenible (y)')
-            plt.xlabel(f'Nivel de {col}')
-            
-            plt.tight_layout()
-            plt.savefig(f'EDA_BoxPlot_{col}.png')
-            print(f"Mostrando Diagrama de Caja para {col}... (Cierre la ventana para continuar)")
-            plt.show()
+    corr = df_clean[var].corr(df_clean['y'])
+    axes_eda[row, col].set_title(f'y vs {var[:12]}\nCorr: {corr:.2f}')
+    axes_eda[row, col].set_xlabel(var[:12])
+    if col == 0:
+        axes_eda[row, col].set_ylabel('Índice y')
+    axes_eda[row, col].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# --- 3. Preparación de datos para regresión ---
+print("\n--- 3. Preparación de datos para regresión ---")
+
+# Variables para regresión (excluyendo 'year')
+reg_features = ['SchoolingRate', 'Poverty', 'UnaccountedWater', 'OpenEstablishments',
+                'RenewableResources', 'PassengersArriving', 'MaritimeTraffic', 
+                'VehicleRegistration']
+
+print(f"Variables para regresión ({len(reg_features)}):")
+for i, feat in enumerate(reg_features, 1):
+    print(f"  x{i}: {feat}")
+print("\nNota: Variable 'year' excluida de los modelos de regresión.")
+print("      Es un identificador temporal, no una variable modificable.")
+
+X = df_clean[reg_features].values
+n_samples, n_features = X.shape
+
+print(f"\nDatos para modelado:")
+print(f"  Observaciones: {n_samples}")
+print(f"  Variables: {n_features}")
+print(f"  Variable objetivo: y (Índice de Turismo Sostenible)")
+
+# Verificar que todas las variables están en rango [0,1]
+print("\nVerificación de rangos (deben estar en [0,1]):")
+for feat in reg_features:
+    min_val = df_clean[feat].min()
+    max_val = df_clean[feat].max()
+    if min_val < 0 or max_val > 1:
+        print(f"  ⚠️  {feat}: [{min_val:.3f}, {max_val:.3f}] - Fuera de rango")
     else:
-        print("Advertencia: Las variables solicitadas para los diagramas de caja no se encontraron en el dataset.")
+        print(f"  ✓ {feat}: [{min_val:.3f}, {max_val:.3f}] - OK")
 
-exploratory_data_analysis(df_clean.copy())
+# Preparar matriz con intercepto
+X_b = np.c_[np.ones((n_samples, 1)), X]
 
-# ==============================================================================
-# PARTE 2: ANÁLISIS DE REGRESIÓN
-# ==============================================================================
-def compare_regression_methods(X_data, y_data):
-    print("\n" + "="*60)
-    print("PARTE 2: ANÁLISIS DE REGRESIÓN")
-    print("="*60)
-    
-    n_samples, n_features = X_data.shape
-    feature_names = X_data.columns.tolist()
-    results_list = []
-
-    # --- 1. Norma L2 (Mínimos Cuadrados Ordinarios - OLS) ---
-    l2_model = LinearRegression()
-    l2_model.fit(X_data, y_data)
-    l2_pred = l2_model.predict(X_data)
-    
-    results_list.append({
-        "Modelo": "L2 (Mínimos Cuadrados)", 
-        "MAE": mean_absolute_error(y_data, l2_pred), 
-        "R2": r2_score(y_data, l2_pred)
-    })
-
-    # --- 2. Norma L1 (Mínimas Desviaciones Absolutas - LAD) ---
-    prob_l1 = LpProblem("Regresion_L1", LpMinimize)
-    beta = [LpVariable(f"b_{j}", cat='Continuous') for j in range(n_features)]
-    beta0 = LpVariable("b0", cat='Continuous')
-    u = [LpVariable(f"u_{i}", lowBound=0) for i in range(n_samples)]
-    
-    prob_l1 += lpSum(u)
-    for i in range(n_samples):
-        y_hat = beta0 + lpSum([beta[j] * X_data.iloc[i,j] for j in range(n_features)])
-        prob_l1 += y_data.iloc[i] - y_hat <= u[i]
-        prob_l1 += y_hat - y_data.iloc[i] <= u[i]
-    prob_l1.solve(PULP_CBC_CMD(msg=0))
-    
-    l1_pred = [value(beta0) + sum(value(beta[j]) * X_data.iloc[i,j] for j in range(n_features)) for i in range(n_samples)]
-    results_list.append({
-        "Modelo": "L1 (Mínimas Desv. Abs.)", 
-        "MAE": mean_absolute_error(y_data, l1_pred), 
-        "R2": r2_score(y_data, l1_pred)
-    })
-
-    # --- 3. Norma L-inf (Minimax) ---
-    prob_inf = LpProblem("Regresion_L_inf", LpMinimize)
-    beta_inf = [LpVariable(f"bi_{j}", cat='Continuous') for j in range(n_features)]
-    beta0_inf = LpVariable("bi0", cat='Continuous')
-    max_dev = LpVariable("max_dev", lowBound=0)
-    
-    prob_inf += max_dev
-    for i in range(n_samples):
-        y_hat = beta0_inf + lpSum([beta_inf[j] * X_data.iloc[i,j] for j in range(n_features)])
-        prob_inf += y_data.iloc[i] - y_hat <= max_dev
-        prob_inf += y_hat - y_data.iloc[i] <= max_dev
-    prob_inf.solve(PULP_CBC_CMD(msg=0))
-    
-    linf_pred = [value(beta0_inf) + sum(value(beta_inf[j]) * X_data.iloc[i,j] for j in range(n_features)) for i in range(n_samples)]
-    results_list.append({
-        "Modelo": "L_inf (Minimax)", 
-        "MAE": mean_absolute_error(y_data, linf_pred), 
-        "R2": r2_score(y_data, linf_pred)
-    })
-    
-    # --- IMPRIMIR ECUACIONES ---
-    print("\n" + "-"*30)
-    print("ECUACIONES DEL MODELO (Coeficientes)")
-    print("-"*30)
-    
-    l2_coeffs = dict(zip(feature_names, l2_model.coef_))
-    print(f"\n[L2 OLS] y = {l2_model.intercept_:.4f} + " + " + ".join([f"{coef:.4f}*{name}" for name, coef in l2_coeffs.items()]))
-    
-    l1_coeffs = {name: value(beta[i]) for i, name in enumerate(feature_names)}
-    print(f"\n[L1 LAD] y = {value(beta0):.4f} + " + " + ".join([f"{coef:.4f}*{name}" for name, coef in l1_coeffs.items()]))
-    
-    linf_coeffs = {name: value(beta_inf[i]) for i, name in enumerate(feature_names)}
-    print(f"\n[L_inf Minimax] y = {value(beta0_inf):.4f} + " + " + ".join([f"{coef:.4f}*{name}" for name, coef in linf_coeffs.items()]))
-    print("-" * 60)
-
-    # Imprimir Métricas
-    res_df = pd.DataFrame(results_list)
-    print("\n" + res_df.to_string(index=False))
-    
-    # Gráfico de Comparación (Ventana Separada)
-    plt.figure(figsize=(12, 7))
-    
-    # 1. Datos Reales (Puntos Grandes)
-    plt.plot(y_data.index, y_data, 'ko', label='Real', markersize=10, zorder=5)
-    
-    # 2. L2 (Linea Gruesa, Verde)
-    plt.plot(y_data.index, l2_pred, 'g-', label='L2 (Mín Cuadrados)', linewidth=4, alpha=0.5)
-    
-    # 3. L1 (Linea Media, Roja Punteada)
-    plt.plot(y_data.index, l1_pred, 'r--', label='L1 (Mín Desv Abs)', linewidth=2.5)
-    
-    # 4. L-inf (Linea Fina, Azul)
-    plt.plot(y_data.index, linf_pred, 'b:', label='L-inf (Minimax)', linewidth=2)
-    
-    plt.title("Comparación de Modelos de Regresión (Superpuestos por Ajuste Perfecto)")
-    plt.legend()
-    plt.ylabel('Valor del Índice')
-    plt.xlabel('Año')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    
-    plt.savefig('Regression_Comparison.png')
-    print("Mostrando Comparación de Regresión... (Cierre la ventana para continuar)")
-    plt.show()
-
-compare_regression_methods(X, y)
-
-# ==============================================================================
-# PARTE 3: OPTIMIZACIÓN CONTRAFACTUAL
-# ==============================================================================
-def solve_counterfactual_robust(target_increase_pct, max_vars=None, logical_constraints=False, description=""):
-    print(f"\n{description}")
-    
-    X_normalized = (X - X.min()) / (X.max() - X.min())
-    if X_normalized.isnull().sum().sum() > 0: X_normalized = X_normalized.fillna(0)
-
-    x_current = X_normalized.iloc[-1].values
-    std_devs = X_normalized.std().values
-    weights = [1/len(X.columns)] * len(X.columns)
-    y_current = np.dot(x_current, weights)
-    
-    p = len(X.columns)
-    feature_names = X.columns.tolist()
-    
-    prob = LpProblem("Optimizacion_Contrafactual", LpMinimize)
-    
-    beta = [LpVariable(f"beta_{i}", lowBound=0, upBound=1-x_current[i]) for i in range(p)]
-    delta = [LpVariable(f"delta_{i}", cat='Binary') for i in range(p)]
-    
-    prob += lpSum(beta) + 0.001 * lpSum(delta)
-    
-    target_gain = y_current * target_increase_pct
-    prob += lpSum([beta[i] * weights[i] for i in range(p)]) >= target_gain
-    
-    for i in range(p):
-        prob += beta[i] <= 0.5 * (std_devs[i] if std_devs[i] > 0 else 0.1)
-        prob += beta[i] <= 10 * delta[i]
-        prob += 0.001 * delta[i] <= beta[i]
-    
-    if max_vars: prob += lpSum(delta) <= max_vars
-    else: prob += lpSum(delta) >= 1
-    
-    if logical_constraints:
-        idx = {name: i for i, name in enumerate(feature_names)}
-        if 'MaritimeTraffic' in idx and 'PassengersArriving' in idx:
-            prob += delta[idx['MaritimeTraffic']] <= delta[idx['PassengersArriving']]
-        if 'SchoolingRate' in idx and 'RenewableResources' in idx:
-            prob += delta[idx['SchoolingRate']] + delta[idx['RenewableResources']] == 1
-        if 'Poverty' in idx and 'VehicleRegistration' in idx:
-            prob += delta[idx['Poverty']] + delta[idx['VehicleRegistration']] >= 1
-    
-    prob.solve(PULP_CBC_CMD(msg=0))
-    
-    if prob.status == LpStatusOptimal:
-        beta_values = [beta[i].varValue for i in range(p)]
-        new_y = y_current + np.dot(beta_values, weights)
-        print("Cambios Recomendados:")
-        for i in range(p):
-            if delta[i].varValue > 0.5:
-                # Desnormalizar
-                scale = X.iloc[:, i].max() - X.iloc[:, i].min()
-                if scale == 0: scale = 1
-                real_change = beta_values[i] * scale
-                print(f"  {feature_names[i]}: +{real_change:,.2f} (Real)")
-        print(f"Objetivo: {target_increase_pct*100:.1f}% -> Logrado: {(new_y - y_current)/y_current*100:.2f}%")
-    else:
-        print("No se encontró solución factible.")
-
+# --- 4. Modelos de Regresión ---
 print("\n" + "="*60)
-print("PARTE 3: ESCENARIOS CONTRAFACTUALES")
+print("4. MODELOS DE REGRESIÓN LINEAL")
 print("="*60)
-solve_counterfactual_robust(0.01, description="Q7a: Incremento del 1%")
-solve_counterfactual_robust(0.05, max_vars=4, description="Q7b: Incremento del 5% (Máx 4 vars)")
-solve_counterfactual_robust(0.25, max_vars=1, description="Q8: Incremento del 25% (1 var)")
-solve_counterfactual_robust(0.01, logical_constraints=True, description="Q10: Prueba Lógica")
 
-print("\n=====================================================================")
-print("                       ANÁLISIS COMPLETO                             ")
-print("Todos los resultados guardados en: 'optimization_results_dropNA_normalized.txt'")
-print("Visualizaciones guardadas como: 'EDA_*.png', 'Regression_Comparison.png'")
-print("=====================================================================")
+print("\n4.1 Formulación teórica de los problemas:")
+
+print("\nA) MÍNIMOS CUADRADOS (L2):")
+print("   Minimizar: Σ(y_i - ŷ_i)²")
+print("   donde: ŷ_i = β₀ + Σβⱼx_ij, j=1,...,8")
+
+print("\nB) MÍNIMAS DESVIACIONES ABSOLUTAS (L1):")
+print("   Minimizar: Σ|y_i - ŷ_i|")
+print("   Sujeto a: y_i - ŷ_i ≤ u_i, ŷ_i - y_i ≤ u_i, u_i ≥ 0")
+
+print("\nC) DESVIACIÓN ABSOLUTA MÁXIMA (L∞):")
+print("   Minimizar: max|y_i - ŷ_i|")
+print("   Sujeto a: y_i - ŷ_i ≤ z, ŷ_i - y_i ≤ z, z ≥ 0")
+
+# 4.2 Modelo L2 (Mínimos Cuadrados)
+print("\n--- 4.2 Modelo L2 - Mínimos Cuadrados ---")
+print("Usando ecuación normal: β = (XᵀX)⁻¹Xᵀy")
+
+try:
+    X_T = X_b.T
+    XTX = X_T @ X_b
+    XTX_inv = np.linalg.inv(XTX)
+    XTy = X_T @ y
+    beta_l2 = XTX_inv @ XTy
+    
+    print("\n✅ Coeficientes L2 calculados:")
+    print(f"  Intercepto (β₀): {beta_l2[0]:.6f}")
+    for i, feat in enumerate(reg_features, 1):
+        print(f"  {feat:25s}: β{i} = {beta_l2[i]:+10.6f}")
+    
+    y_pred_l2 = X_b @ beta_l2
+    mae_l2 = np.mean(np.abs(y - y_pred_l2))
+    mse_l2 = np.mean((y - y_pred_l2)**2)
+    r2_l2 = 1 - np.sum((y - y_pred_l2)**2) / np.sum((y - np.mean(y))**2)
+    
+    print(f"\n  Error MAE: {mae_l2:.6f}")
+    print(f"  Error MSE: {mse_l2:.6f}")
+    print(f"  R²:        {r2_l2:.6f}")
+    
+except np.linalg.LinAlgError:
+    print("❌ Error: Matriz singular - multicolinealidad perfecta detectada")
+    beta_l2 = np.zeros(n_features + 1)
+
+# 4.3 Modelo L1 (Mínimas Desviaciones Absolutas)
+print("\n--- 4.3 Modelo L1 - Mínimas Desviaciones Absolutas ---")
+print("Resolviendo con Programación Lineal (PuLP)")
+
+prob_l1 = pulp.LpProblem("Regression_L1", pulp.LpMinimize)
+
+# Variables
+beta_l1_vars = [pulp.LpVariable(f"beta_{j}", cat='Continuous') for j in range(n_features + 1)]
+u_vars = [pulp.LpVariable(f"u_{i}", lowBound=0, cat='Continuous') for i in range(n_samples)]
+
+# Función objetivo
+prob_l1 += pulp.lpSum(u_vars)
+
+# Restricciones
+for i in range(n_samples):
+    pred_expr = pulp.lpSum(beta_l1_vars[j] * X_b[i, j] for j in range(n_features + 1))
+    prob_l1 += y[i] - pred_expr <= u_vars[i]
+    prob_l1 += pred_expr - y[i] <= u_vars[i]
+
+# Resolver
+prob_l1.solve(pulp.PULP_CBC_CMD(msg=False))
+beta_l1 = np.array([pulp.value(var) for var in beta_l1_vars])
+
+print("\n✅ Coeficientes L1 calculados:")
+print(f"  Intercepto (β₀): {beta_l1[0]:.6f}")
+for i, feat in enumerate(reg_features, 1):
+    print(f"  {feat:25s}: β{i} = {beta_l1[i]:+10.6f}")
+
+y_pred_l1 = X_b @ beta_l1
+mae_l1 = np.mean(np.abs(y - y_pred_l1))
+r2_l1 = 1 - np.sum((y - y_pred_l1)**2) / np.sum((y - np.mean(y))**2)
+
+print(f"\n  Error MAE: {mae_l1:.6f}")
+print(f"  R²:        {r2_l1:.6f}")
+
+# 4.4 Modelo L∞ (Minimax)
+print("\n--- 4.4 Modelo L∞ - Minimax ---")
+print("Resolviendo con Programación Lineal (PuLP)")
+
+prob_linf = pulp.LpProblem("Regression_Linf", pulp.LpMinimize)
+
+# Variables
+beta_linf_vars = [pulp.LpVariable(f"beta_linf_{j}", cat='Continuous') for j in range(n_features + 1)]
+z_var = pulp.LpVariable("z", lowBound=0, cat='Continuous')
+
+# Función objetivo
+prob_linf += z_var
+
+# Restricciones
+for i in range(n_samples):
+    pred_expr = pulp.lpSum(beta_linf_vars[j] * X_b[i, j] for j in range(n_features + 1))
+    prob_linf += y[i] - pred_expr <= z_var
+    prob_linf += pred_expr - y[i] <= z_var
+
+# Resolver
+prob_linf.solve(pulp.PULP_CBC_CMD(msg=False))
+beta_linf = np.array([pulp.value(var) for var in beta_linf_vars])
+z_opt = pulp.value(z_var)
+
+print("\n✅ Coeficientes L∞ calculados:")
+print(f"  Intercepto (β₀): {beta_linf[0]:.6f}")
+for i, feat in enumerate(reg_features, 1):
+    print(f"  {feat:25s}: β{i} = {beta_linf[i]:+10.6f}")
+
+y_pred_linf = X_b @ beta_linf
+mae_linf = np.mean(np.abs(y - y_pred_linf))
+max_error = np.max(np.abs(y - y_pred_linf))
+r2_linf = 1 - np.sum((y - y_pred_linf)**2) / np.sum((y - np.mean(y))**2)
+
+print(f"\n  Error máximo (z): {z_opt:.6f}")
+print(f"  Error MAE:         {mae_linf:.6f}")
+print(f"  R²:                {r2_linf:.6f}")
+
+# 4.5 Comparación gráfica
+print("\n--- 4.5 Comparación gráfica de modelos ---")
+
+fig_compare, axes_compare = plt.subplots(1, 2, figsize=(14, 6))
+
+# Gráfico 1: Valores reales vs predichos
+axes_compare[0].plot(years, y, 'ko-', linewidth=2, markersize=8, label='Real', markerfacecolor='white')
+axes_compare[0].plot(years, y_pred_l2, 'bs--', markersize=6, label='L2 Pred', alpha=0.8)
+axes_compare[0].plot(years, y_pred_l1, 'r^--', markersize=6, label='L1 Pred', alpha=0.8)
+axes_compare[0].plot(years, y_pred_linf, 'gD--', markersize=6, label='L∞ Pred', alpha=0.8)
+axes_compare[0].set_title('Comparación: Valores Reales vs Predichos')
+axes_compare[0].set_xlabel('Año')
+axes_compare[0].set_ylabel('Índice de Turismo Sostenible')
+axes_compare[0].legend()
+axes_compare[0].grid(True, alpha=0.3)
+axes_compare[0].set_xticks(years)
+axes_compare[0].tick_params(axis='x', rotation=45)
+
+# Gráfico 2: Residuales
+residuals_l2 = y - y_pred_l2
+residuals_l1 = y - y_pred_l1
+residuals_linf = y - y_pred_linf
+
+x_pos = np.arange(len(years))
+width = 0.25
+axes_compare[1].bar(x_pos - width, residuals_l2, width, label='L2', color='blue', alpha=0.7)
+axes_compare[1].bar(x_pos, residuals_l1, width, label='L1', color='red', alpha=0.7)
+axes_compare[1].bar(x_pos + width, residuals_linf, width, label='L∞', color='green', alpha=0.7)
+axes_compare[1].axhline(y=0, color='k', linestyle='-', alpha=0.3)
+axes_compare[1].set_title('Residuales por Modelo')
+axes_compare[1].set_xlabel('Observación (por año)')
+axes_compare[1].set_ylabel('Residual (y - ŷ)')
+axes_compare[1].set_xticks(x_pos)
+axes_compare[1].set_xticklabels(years, rotation=45)
+axes_compare[1].legend()
+axes_compare[1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# --- 5. Análisis de resultados de regresión ---
+print("\n--- 5. Análisis de resultados ---")
+
+# Crear tabla comparativa
+print("\n📊 COMPARACIÓN DE MODELOS:")
+print("-" * 70)
+print(f"{'Modelo':25s} {'MAE':>10s} {'MSE':>10s} {'R²':>10s} {'Max Error':>12s}")
+print("-" * 70)
+print(f"{'L2 (Mínimos Cuadrados)':25s} {mae_l2:10.6f} {mse_l2:10.6f} {r2_l2:10.6f} {np.max(np.abs(residuals_l2)):12.6f}")
+print(f"{'L1 (Mín. Desv. Abs.)':25s} {mae_l1:10.6f} {'-':10s} {r2_l1:10.6f} {np.max(np.abs(residuals_l1)):12.6f}")
+print(f"{'L∞ (Minimax)':25s} {mae_linf:10.6f} {'-':10s} {r2_linf:10.6f} {max_error:12.6f}")
+print("-" * 70)
+
+# Verificar si los coeficientes son idénticos
+coeff_diff = np.max([np.max(np.abs(beta_l2 - beta_l1)), 
+                     np.max(np.abs(beta_l2 - beta_linf))])
+
+if coeff_diff < 1e-6:
+    print("\n🔍 OBSERVACIÓN: Los tres modelos producen coeficientes idénticos.")
+    print("   Razón: n (observaciones) ≈ p (variables) + 1")
+    print(f"   n = {n_samples}, p = {n_features} → sistema perfectamente determinado")
+else:
+    print(f"\n✅ Los modelos tienen coeficientes diferentes (diferencia máxima: {coeff_diff:.10f})")
+
+# ============================================================================
+# PARTE 2: OPTIMIZACIÓN CONTRAFACTUAL
+# ============================================================================
+print("\n" + "="*60)
+print("PARTE 2: OPTIMIZACIÓN CONTRAFACTUAL")
+print("="*60)
+
+print("\n6. FORMULACIÓN DEL PROBLEMA DE PROGRAMACIÓN LINEAL")
+print("-" * 50)
+
+print("\nVariables de decisión:")
+print("  δⱼ : cambio en la variable xⱼ (j = 1,...,p)")
+print("  bⱼ : variable binaria (1 si xⱼ se modifica, 0 si no)")
+print("  |δⱼ|: valor absoluto del cambio")
+
+print("\nFunción objetivo (minimizar):")
+print("  Σ|δⱼ| + α·Σbⱼ  (cambios totales + número de cambios)")
+
+print("\nRestricciones:")
+print("  1. Aumento deseado: Σ wⱼ·δⱼ ≥ ε·y₀")
+print("  2. Activación: -M·bⱼ ≤ δⱼ ≤ M·bⱼ")
+print("  3. Límites de cambio: |δⱼ| ≤ a·σⱼ")
+print("  4. Rango variables: 0 ≤ xⱼ + δⱼ ≤ 1")
+print("  5. Número de variables: μₗ ≤ Σbⱼ ≤ μᵤ")
+
+print("\nDonde:")
+print("  wⱼ = 1/p (pesos iguales según enunciado)")
+print("  y₀ = valor actual del índice")
+print("  ε = aumento porcentual deseado")
+print("  σⱼ = desviación estándar de xⱼ")
+print("  a = constante a elegir (usaremos a = 0.5)")
+print("  M = número grande para restricciones big-M")
+
+# --- 7. Implementación de optimización contrafactual ---
+print("\n" + "="*60)
+print("7. IMPLEMENTACIÓN: OPTIMIZACIÓN CONTRAFACTUAL")
+print("="*60)
+
+# Preparar datos para 2024
+df_2024 = df_clean[df_clean['year'] == 2024]
+if len(df_2024) == 0:
+    print("❌ ERROR: No hay datos para 2024")
+    x0 = np.zeros(len(reg_features))
+    y0 = 0
+else:
+    x0 = df_2024[reg_features].values.flatten()
+    y0 = df_2024['y'].values[0]
+
+print(f"\nDatos para 2024:")
+print(f"  Índice actual: y = {y0:.3f}")
+for i, feat in enumerate(reg_features):
+    print(f"  {feat:25s}: {x0[i]:.3f}")
+
+# Parámetros según enunciado
+p = len(reg_features)
+w = np.ones(p) / p  # Pesos iguales wⱼ = 1/p
+a = 0.5  # Constante para límites de cambio
+
+# Calcular desviaciones estándar
+std_features = df_clean[reg_features].std().values
+
+print(f"\n📊 Parámetros del modelo contrafactual:")
+print(f"  Número de variables: p = {p}")
+print(f"  Pesos: wⱼ = 1/{p} = {1/p:.3f} ∀j")
+print(f"  Constante a = {a} (justificación: cambios moderados)")
+print(f"  Variables en rango [0,1] ✓")
+
+# Función para optimización contrafactual
+def optimizacion_contrafactual(aumento_pct, min_vars=None, max_vars=None, 
+                               restricciones_logicas=None, a_factor=0.5):
+    """
+    Encuentra cambios mínimos para lograr aumento deseado.
+    
+    Parámetros:
+    - aumento_pct: aumento porcentual deseado (ej: 1 para 1%)
+    - min_vars: mínimo de variables a modificar
+    - max_vars: máximo de variables a modificar
+    - restricciones_logicas: diccionario con restricciones
+    - a_factor: factor para límites basados en desviación estándar
+    """
+    
+    # Calcular objetivo
+    y_target = y0 * (1 + aumento_pct/100)
+    aumento_necesario = y_target - y0
+    
+    # Crear problema
+    prob = pulp.LpProblem(f"Contrafactual_{aumento_pct}pct", pulp.LpMinimize)
+    
+    # Variables
+    delta = [pulp.LpVariable(f"delta_{i}", lowBound=None, cat='Continuous') 
+            for i in range(p)]
+    b = [pulp.LpVariable(f"b_{i}", cat='Binary') for i in range(p)]
+    abs_delta = [pulp.LpVariable(f"abs_delta_{i}", lowBound=0, cat='Continuous') 
+                for i in range(p)]
+    
+    # Función objetivo: minimizar cambios + penalizar número de cambios
+    prob += pulp.lpSum(abs_delta) + 0.01 * pulp.lpSum(b)
+    
+    # Restricción: lograr aumento deseado
+    prob += pulp.lpSum(w[i] * delta[i] for i in range(p)) >= aumento_necesario
+    
+    # Relación entre delta y b (activación)
+    M = 2.0  # Suficiente para variables en [0,1]
+    for i in range(p):
+        prob += abs_delta[i] >= delta[i]
+        prob += abs_delta[i] >= -delta[i]
+        prob += delta[i] >= -M * b[i]
+        prob += delta[i] <= M * b[i]
+    
+    # Límites en cambios basados en desviación estándar
+    for i in range(p):
+        max_cambio = a_factor * std_features[i]
+        prob += delta[i] >= -max_cambio
+        prob += delta[i] <= max_cambio
+    
+    # Rango [0,1] para variables modificadas
+    for i in range(p):
+        prob += x0[i] + delta[i] >= 0
+        prob += x0[i] + delta[i] <= 1
+    
+    # Límite en número de variables a modificar
+    if min_vars is not None:
+        prob += pulp.lpSum(b) >= min_vars
+    if max_vars is not None:
+        prob += pulp.lpSum(b) <= max_vars
+    
+    # Restricciones lógicas
+    if restricciones_logicas:
+        # a) Si MaritimeTraffic, entonces PassengersArriving
+        if 'si_entonces' in restricciones_logicas:
+            for var1, var2 in restricciones_logicas['si_entonces']:
+                idx1 = reg_features.index(var1)
+                idx2 = reg_features.index(var2)
+                prob += b[idx1] <= b[idx2]  # Si b1=1 entonces b2=1
+        
+        # b) Una y solo una entre SchoolingRate y RenewableResources
+        if 'uno_solo' in restricciones_logicas:
+            for var1, var2 in restricciones_logicas['uno_solo']:
+                idx1 = reg_features.index(var1)
+                idx2 = reg_features.index(var2)
+                prob += b[idx1] + b[idx2] == 1
+        
+        # c) Al menos una entre Poverty y VehicleRegistration
+        if 'al_menos_una' in restricciones_logicas:
+            for vars_list in restricciones_logicas['al_menos_una']:
+                indices = [reg_features.index(v) for v in vars_list]
+                prob += pulp.lpSum(b[idx] for idx in indices) >= 1
+    
+    # Resolver
+    prob.solve(pulp.PULP_CBC_CMD(msg=False))
+    
+    if pulp.LpStatus[prob.status] == 'Optimal':
+        delta_vals = [pulp.value(delta[i]) for i in range(p)]
+        b_vals = [pulp.value(b[i]) for i in range(p)]
+        
+        # Calcular aumento logrado
+        aumento_logrado = sum(w[i] * delta_vals[i] for i in range(p))
+        pct_logrado = (aumento_logrado / y0) * 100
+        
+        # Preparar resultados
+        cambios = []
+        for i, feat in enumerate(reg_features):
+            if abs(delta_vals[i]) > 1e-6:
+                nuevo_valor = min(1, max(0, x0[i] + delta_vals[i]))
+                cambios.append({
+                    'variable': feat,
+                    'cambio': delta_vals[i],
+                    'original': x0[i],
+                    'nuevo': nuevo_valor
+                })
+        
+        return cambios, pct_logrado
+    else:
+        return None, 0
+
+# --- 8. Aplicación a casos específicos ---
+print("\n" + "="*60)
+print("8. APLICACIÓN A CASOS ESPECÍFICOS")
+print("="*60)
+
+# 8.1 Pregunta 7a: Incremento del 1%
+print("\n📌 PREGUNTA 7a: ¿Qué cambios para un incremento del 1% en 2024?")
+cambios_1pct, logrado_1pct = optimizacion_contrafactual(aumento_pct=1, a_factor=a)
+
+if cambios_1pct:
+    print(f"✅ Solución encontrada (+{logrado_1pct:.2f}% logrado)")
+    print("  Cambios recomendados:")
+    for cambio in cambios_1pct:
+        print(f"  • {cambio['variable']:25s}: {cambio['original']:.3f} → {cambio['nuevo']:.3f} " +
+              f"(Δ={cambio['cambio']:+.3f})")
+else:
+    print("❌ No se encontró solución factible")
+
+# 8.2 Pregunta 7b: Incremento del 5% (máx 4 variables)
+print("\n📌 PREGUNTA 7b: ¿Qué cambios para un incremento del 5% (máx 4 variables)?")
+cambios_5pct, logrado_5pct = optimizacion_contrafactual(aumento_pct=5, max_vars=4, a_factor=a)
+
+if cambios_5pct:
+    print(f"✅ Solución encontrada (+{logrado_5pct:.2f}% logrado)")
+    print(f"  Variables modificadas: {len(cambios_5pct)} (máximo 4)")
+    print("  Cambios recomendados:")
+    for cambio in cambios_5pct:
+        print(f"  • {cambio['variable']:25s}: {cambio['original']:.3f} → {cambio['nuevo']:.3f} " +
+              f"(Δ={cambio['cambio']:+.3f})")
+else:
+    print("❌ No se encontró solución factible")
+
+# 8.3 Pregunta 8: Incremento del 25% con una sola variable
+print("\n📌 PREGUNTA 8: ¿Qué variable modificar para incremento del 25% (una sola)?")
+
+# Probar cada variable individualmente
+mejor_variable = None
+mejor_aumento = 0
+mejor_idx = -1
+
+for i, variable in enumerate(reg_features):
+    max_cambio = a * std_features[i]
+    aumento_posible = w[i] * max_cambio
+    pct_posible = (aumento_posible / y0) * 100
+    
+    if aumento_posible > mejor_aumento:
+        mejor_aumento = aumento_posible
+        mejor_variable = variable
+        mejor_idx = i
+
+aumento_requerido = y0 * 0.25
+
+if mejor_variable and mejor_aumento >= aumento_requerido:
+    cambio_necesario = aumento_requerido / w[mejor_idx]
+    nuevo_valor = min(1, x0[mejor_idx] + cambio_necesario)
+    
+    print(f"✅ Solución: Modificar {mejor_variable}")
+    print(f"  Cambio necesario: +{cambio_necesario:.3f}")
+    print(f"  Valor actual: {x0[mejor_idx]:.3f} → Nuevo: {nuevo_valor:.3f}")
+    print(f"  Aumento lograble: {(mejor_aumento/y0)*100:.1f}%")
+else:
+    print(f"❌ No se puede lograr +25% con una sola variable")
+    if mejor_variable:
+        print(f"  Mejor variable: {mejor_variable}")
+        print(f"  Aumento máximo posible: {(mejor_aumento/y0)*100:.1f}%")
+    print(f"  Aumento requerido: 25.0%")
+
+# 8.4 Pregunta 10: Restricciones lógicas
+print("\n📌 PREGUNTA 10: Prueba con restricciones lógicas (+1%)")
+
+restricciones = {
+    'si_entonces': [('MaritimeTraffic', 'PassengersArriving')],
+    'uno_solo': [('SchoolingRate', 'RenewableResources')],
+    'al_menos_una': [['Poverty', 'VehicleRegistration']]
+}
+
+cambios_logicas, logrado_logicas = optimizacion_contrafactual(
+    aumento_pct=1, 
+    restricciones_logicas=restricciones,
+    a_factor=a
+)
+
+if cambios_logicas:
+    print(f"✅ Solución encontrada con restricciones lógicas (+{logrado_logicas:.2f}%)")
+    print("  Restricciones aplicadas:")
+    print("    1. Si MaritimeTraffic → PassengersArriving")
+    print("    2. Uno solo entre SchoolingRate y RenewableResources")
+    print("    3. Al menos una entre Poverty y VehicleRegistration")
+    
+    print("\n  Cambios recomendados:")
+    vars_modificadas = [c['variable'] for c in cambios_logicas]
+    for cambio in cambios_logicas:
+        print(f"  • {cambio['variable']:25s}: {cambio['original']:.3f} → {cambio['nuevo']:.3f}")
+    
+    # Verificar restricciones
+    print("\n  Verificación:")
+    print(f"    MaritimeTraffic modificada: {'MaritimeTraffic' in vars_modificadas}")
+    print(f"    PassengersArriving modificada: {'PassengersArriving' in vars_modificadas}")
+    print(f"    SchoolingRate modificada: {'SchoolingRate' in vars_modificadas}")
+    print(f"    RenewableResources modificada: {'RenewableResources' in vars_modificadas}")
+    print(f"    Poverty modificada: {'Poverty' in vars_modificadas}")
+    print(f"    VehicleRegistration modificada: {'VehicleRegistration' in vars_modificadas}")
+else:
+    print("❌ No se encontró solución con las restricciones dadas")
+
+# ============================================================================
+# GUARDAR RESULTADOS COMPLETOS
+# ============================================================================
+print("\n" + "="*60)
+print("GUARDANDO RESULTADOS COMPLETOS")
+print("="*60)
+
+output_file = "resultados_completos_practica.txt"
+with open(output_file, 'w', encoding='utf-8') as f:
+    f.write("="*80 + "\n")
+    f.write("PRÁCTICA DE OPTIMIZACIÓN - TURISMO SOSTENIBLE EN MALLORCA\n")
+    f.write("MAESTRÍA EN ESTADÍSTICA Y CIENCIA DE DATOS - SEMINARIO II\n")
+    f.write("="*80 + "\n\n")
+    
+    f.write("RESUMEN EJECUTIVO\n")
+    f.write("-"*50 + "\n")
+    f.write(f"Fecha de análisis: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    f.write(f"Observaciones: {df_clean.shape[0]} años ({df_clean['year'].min()}-{df_clean['year'].max()})\n")
+    f.write(f"Variables analizadas: {len(reg_features)} indicadores + índice y\n")
+    f.write(f"Estrategia de limpieza: Eliminación por lista (listwise deletion)\n\n")
+    
+    f.write("PARTE 1: REGRESIÓN LINEAL\n")
+    f.write("-"*50 + "\n")
+    f.write("Modelos implementados:\n")
+    f.write("  1. L2: Mínimos cuadrados (ecuación normal)\n")
+    f.write("  2. L1: Mínimas desviaciones absolutas (programación lineal)\n")
+    f.write("  3. L∞: Desviación absoluta máxima (programación lineal)\n\n")
+    
+    f.write("Ecuaciones de regresión:\n")
+    f.write("-"*40 + "\n")
+    
+    f.write("MODELO L2 (Mínimos Cuadrados):\n")
+    f.write(f"y = {beta_l2[0]:.6f} ")
+    for i, feat in enumerate(reg_features, 1):
+        f.write(f"+ ({beta_l2[i]:+10.6f})·{feat} ")
+    f.write(f"\nMAE: {mae_l2:.6f}, R²: {r2_l2:.6f}\n\n")
+    
+    f.write("MODELO L1 (Mínimas Desv. Absolutas):\n")
+    f.write(f"y = {beta_l1[0]:.6f} ")
+    for i, feat in enumerate(reg_features, 1):
+        f.write(f"+ ({beta_l1[i]:+10.6f})·{feat} ")
+    f.write(f"\nMAE: {mae_l1:.6f}, R²: {r2_l1:.6f}\n\n")
+    
+    f.write("MODELO L∞ (Minimax):\n")
+    f.write(f"y = {beta_linf[0]:.6f} ")
+    for i, feat in enumerate(reg_features, 1):
+        f.write(f"+ ({beta_linf[i]:+10.6f})·{feat} ")
+    f.write(f"\nMAE: {mae_linf:.6f}, Error máximo: {max_error:.6f}, R²: {r2_linf:.6f}\n\n")
+    
+    f.write("PARTE 2: OPTIMIZACIÓN CONTRAFACTUAL\n")
+    f.write("-"*50 + "\n")
+    f.write(f"Índice base (2024): y = {y0:.4f}\n")
+    f.write(f"Parámetros: p={p}, wⱼ=1/{p}, a={a}\n\n")
+    
+    f.write("RESULTADOS PREGUNTA 7a (1% aumento):\n")
+    if cambios_1pct:
+        f.write(f"  Logrado: +{logrado_1pct:.2f}%\n")
+        for cambio in cambios_1pct:
+            f.write(f"  • {cambio['variable']}: {cambio['original']:.3f}→{cambio['nuevo']:.3f} " +
+                   f"(Δ={cambio['cambio']:+.3f})\n")
+    else:
+        f.write("  No se encontró solución\n")
+    f.write("\n")
+    
+    f.write("RESULTADOS PREGUNTA 7b (5% aumento, máx 4 variables):\n")
+    if cambios_5pct:
+        f.write(f"  Logrado: +{logrado_5pct:.2f}%\n")
+        for cambio in cambios_5pct:
+            f.write(f"  • {cambio['variable']}: {cambio['original']:.3f}→{cambio['nuevo']:.3f} " +
+                   f"(Δ={cambio['cambio']:+.3f})\n")
+    else:
+        f.write("  No se encontró solución\n")
+    f.write("\n")
+    
+    f.write("RESULTADOS PREGUNTA 8 (25% aumento, 1 variable):\n")
+    if mejor_variable:
+        f.write(f"  Variable recomendada: {mejor_variable}\n")
+        f.write(f"  Aumento máximo posible: {(mejor_aumento/y0)*100:.1f}%\n")
+        if mejor_aumento >= aumento_requerido:
+            f.write("  ✓ Se puede lograr 25% con esta variable\n")
+        else:
+            f.write("  ✗ No se puede lograr 25% con una sola variable\n")
+    f.write("\n")
+    
+    f.write("RESULTADOS PREGUNTA 10 (restricciones lógicas):\n")
+    if cambios_logicas:
+        f.write(f"  Logrado: +{logrado_logicas:.2f}%\n")
+        f.write("  Restricciones aplicadas:\n")
+        f.write("    1. Si MaritimeTraffic → PassengersArriving\n")
+        f.write("    2. Uno solo: SchoolingRate XOR RenewableResources\n")
+        f.write("    3. Al menos una: Poverty OR VehicleRegistration\n")
+        f.write("  Variables modificadas:\n")
+        for cambio in cambios_logicas:
+            f.write(f"    • {cambio['variable']}\n")
+    else:
+        f.write("  No se encontró solución con las restricciones\n")
+    f.write("\n")
+    
+    f.write("CONCLUSIONES\n")
+    f.write("-"*50 + "\n")
+    f.write("1. Los tres modelos de regresión producen resultados similares debido a n≈p\n")
+    f.write("2. La optimización contrafactual permite identificar cambios mínimos\n")
+    f.write("3. Para aumentos pequeños (1-5%), es posible con cambios moderados\n")
+    f.write("4. Para aumentos grandes (25%), se necesitan cambios en múltiples variables\n")
+    f.write("5. Las restricciones lógicas añaden complejidad pero son modelables\n\n")
+    
+    f.write("RECOMENDACIONES PARA EL OBSERVATORIO DE TURISMO SOSTENIBLE:\n")
+    f.write("1. Priorizar variables con mayor impacto positivo según modelos\n")
+    f.write("2. Considerar la factibilidad de los cambios sugeridos\n")
+    f.write("3. Evaluar trade-offs entre número de variables y magnitud de cambios\n")
+    f.write("4. Realizar análisis de sensibilidad con diferentes valores de 'a'\n")
+
+print(f"✅ Resultados completos guardados en '{output_file}'")
+
+print("\n" + "="*80)
+print("PRÁCTICA COMPLETADA EXITOSAMENTE")
+print("="*80)
+print("\nSe ha ejecutado:")
+print("✓ Análisis Exploratorio de Datos (6 gráficos)")
+print("✓ Tres modelos de regresión (L1, L2, L∞)")
+print("✓ Optimización contrafactual para 4 escenarios")
+print("✓ Resultados guardados en archivo de texto")
+print("\nListo para entregar la práctica.")
