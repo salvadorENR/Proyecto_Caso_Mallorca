@@ -208,7 +208,7 @@ try:
     print(f"  R²:        {r2_l2:.6f}")
     
 except np.linalg.LinAlgError:
-    print("❌ Error: Matriz singular - multicolinealidad perfecta detectada")
+    print("Error: Matriz singular - multicolinealidad perfecta detectada")
     beta_l2 = np.zeros(n_features + 1)
 
 # 4.3 Modelo L1 (Mínimas Desviaciones Absolutas)
@@ -234,7 +234,7 @@ for i in range(n_samples):
 prob_l1.solve(pulp.PULP_CBC_CMD(msg=False))
 beta_l1 = np.array([pulp.value(var) for var in beta_l1_vars])
 
-print("\n✅ Coeficientes L1 calculados:")
+print("\n Coeficientes L1 calculados:")
 print(f"  Intercepto (β₀): {beta_l1[0]:.6f}")
 for i, feat in enumerate(reg_features, 1):
     print(f"  {feat:25s}: β{i} = {beta_l1[i]:+10.6f}")
@@ -270,7 +270,7 @@ prob_linf.solve(pulp.PULP_CBC_CMD(msg=False))
 beta_linf = np.array([pulp.value(var) for var in beta_linf_vars])
 z_opt = pulp.value(z_var)
 
-print("\n✅ Coeficientes L∞ calculados:")
+print("\n Coeficientes L∞ calculados:")
 print(f"  Intercepto (β₀): {beta_linf[0]:.6f}")
 for i, feat in enumerate(reg_features, 1):
     print(f"  {feat:25s}: β{i} = {beta_linf[i]:+10.6f}")
@@ -330,7 +330,7 @@ plt.show()
 print("\n--- 5. Análisis de resultados ---")
 
 # Crear tabla comparativa
-print("\n📊 COMPARACIÓN DE MODELOS:")
+print("\n COMPARACIÓN DE MODELOS:")
 print("-" * 70)
 print(f"{'Modelo':25s} {'MAE':>10s} {'MSE':>10s} {'R²':>10s} {'Max Error':>12s}")
 print("-" * 70)
@@ -348,7 +348,7 @@ if coeff_diff < 1e-6:
     print("   Razón: n (observaciones) ≈ p (variables) + 1")
     print(f"   n = {n_samples}, p = {n_features} → sistema perfectamente determinado")
 else:
-    print(f"\n✅ Los modelos tienen coeficientes diferentes (diferencia máxima: {coeff_diff:.10f})")
+    print(f"\n Los modelos tienen coeficientes diferentes (diferencia máxima: {coeff_diff:.10f})")
 
 # ============================================================================
 # PARTE 2: OPTIMIZACIÓN CONTRAFACTUAL
@@ -391,7 +391,7 @@ print("="*60)
 # Preparar datos para 2024
 df_2024 = df_clean[df_clean['year'] == 2024]
 if len(df_2024) == 0:
-    print("❌ ERROR: No hay datos para 2024")
+    print(" ERROR: No hay datos para 2024")
     x0 = np.zeros(len(reg_features))
     y0 = 0
 else:
@@ -411,7 +411,7 @@ a = 0.5  # Constante para límites de cambio
 # Calcular desviaciones estándar
 std_features = df_clean[reg_features].std().values
 
-print(f"\n📊 Parámetros del modelo contrafactual:")
+print(f"\n Parámetros del modelo contrafactual:")
 print(f"  Número de variables: p = {p}")
 print(f"  Pesos: wⱼ = 1/{p} = {1/p:.3f} ∀j")
 print(f"  Constante a = {a} (justificación: cambios moderados)")
@@ -531,34 +531,34 @@ print("8. APLICACIÓN A CASOS ESPECÍFICOS")
 print("="*60)
 
 # 8.1 Pregunta 7a: Incremento del 1%
-print("\n📌 PREGUNTA 7a: ¿Qué cambios para un incremento del 1% en 2024?")
+print("\n PREGUNTA 7a: ¿Qué cambios para un incremento del 1% en 2024?")
 cambios_1pct, logrado_1pct = optimizacion_contrafactual(aumento_pct=1, a_factor=a)
 
 if cambios_1pct:
-    print(f"✅ Solución encontrada (+{logrado_1pct:.2f}% logrado)")
+    print(f" Solución encontrada (+{logrado_1pct:.2f}% logrado)")
     print("  Cambios recomendados:")
     for cambio in cambios_1pct:
         print(f"  • {cambio['variable']:25s}: {cambio['original']:.3f} → {cambio['nuevo']:.3f} " +
               f"(Δ={cambio['cambio']:+.3f})")
 else:
-    print("❌ No se encontró solución factible")
+    print(" No se encontró solución factible")
 
 # 8.2 Pregunta 7b: Incremento del 5% (máx 4 variables)
-print("\n📌 PREGUNTA 7b: ¿Qué cambios para un incremento del 5% (máx 4 variables)?")
+print("\n PREGUNTA 7b: ¿Qué cambios para un incremento del 5% (máx 4 variables)?")
 cambios_5pct, logrado_5pct = optimizacion_contrafactual(aumento_pct=5, max_vars=4, a_factor=a)
 
 if cambios_5pct:
-    print(f"✅ Solución encontrada (+{logrado_5pct:.2f}% logrado)")
+    print(f" Solución encontrada (+{logrado_5pct:.2f}% logrado)")
     print(f"  Variables modificadas: {len(cambios_5pct)} (máximo 4)")
     print("  Cambios recomendados:")
     for cambio in cambios_5pct:
         print(f"  • {cambio['variable']:25s}: {cambio['original']:.3f} → {cambio['nuevo']:.3f} " +
               f"(Δ={cambio['cambio']:+.3f})")
 else:
-    print("❌ No se encontró solución factible")
+    print(" No se encontró solución factible")
 
 # 8.3 Pregunta 8: Incremento del 25% con una sola variable
-print("\n📌 PREGUNTA 8: ¿Qué variable modificar para incremento del 25% (una sola)?")
+print("\n PREGUNTA 8: ¿Qué variable modificar para incremento del 25% (una sola)?")
 
 # Probar cada variable individualmente
 mejor_variable = None
@@ -581,19 +581,19 @@ if mejor_variable and mejor_aumento >= aumento_requerido:
     cambio_necesario = aumento_requerido / w[mejor_idx]
     nuevo_valor = min(1, x0[mejor_idx] + cambio_necesario)
     
-    print(f"✅ Solución: Modificar {mejor_variable}")
+    print(f" Solución: Modificar {mejor_variable}")
     print(f"  Cambio necesario: +{cambio_necesario:.3f}")
     print(f"  Valor actual: {x0[mejor_idx]:.3f} → Nuevo: {nuevo_valor:.3f}")
     print(f"  Aumento lograble: {(mejor_aumento/y0)*100:.1f}%")
 else:
-    print(f"❌ No se puede lograr +25% con una sola variable")
+    print(f" No se puede lograr +25% con una sola variable")
     if mejor_variable:
         print(f"  Mejor variable: {mejor_variable}")
         print(f"  Aumento máximo posible: {(mejor_aumento/y0)*100:.1f}%")
     print(f"  Aumento requerido: 25.0%")
 
 # 8.4 Pregunta 10: Restricciones lógicas
-print("\n📌 PREGUNTA 10: Prueba con restricciones lógicas (+1%)")
+print("\n PREGUNTA 10: Prueba con restricciones lógicas (+1%)")
 
 restricciones = {
     'si_entonces': [('MaritimeTraffic', 'PassengersArriving')],
@@ -608,7 +608,7 @@ cambios_logicas, logrado_logicas = optimizacion_contrafactual(
 )
 
 if cambios_logicas:
-    print(f"✅ Solución encontrada con restricciones lógicas (+{logrado_logicas:.2f}%)")
+    print(f" Solución encontrada con restricciones lógicas (+{logrado_logicas:.2f}%)")
     print("  Restricciones aplicadas:")
     print("    1. Si MaritimeTraffic → PassengersArriving")
     print("    2. Uno solo entre SchoolingRate y RenewableResources")
@@ -628,7 +628,7 @@ if cambios_logicas:
     print(f"    Poverty modificada: {'Poverty' in vars_modificadas}")
     print(f"    VehicleRegistration modificada: {'VehicleRegistration' in vars_modificadas}")
 else:
-    print("❌ No se encontró solución con las restricciones dadas")
+    print(" No se encontró solución con las restricciones dadas")
 
 # ============================================================================
 # GUARDAR RESULTADOS COMPLETOS
@@ -742,7 +742,7 @@ with open(output_file, 'w', encoding='utf-8') as f:
     f.write("3. Evaluar trade-offs entre número de variables y magnitud de cambios\n")
     f.write("4. Realizar análisis de sensibilidad con diferentes valores de 'a'\n")
 
-print(f"✅ Resultados completos guardados en '{output_file}'")
+print(f" Resultados completos guardados en '{output_file}'")
 
 print("\n" + "="*80)
 print("PRÁCTICA COMPLETADA EXITOSAMENTE")
