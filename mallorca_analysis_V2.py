@@ -33,7 +33,7 @@ for col in df.columns:
 
 # Estrategia: Eliminación por lista (mantener solo observaciones completas)
 df_clean = df.dropna()
-print(f"\n✅ Dataset limpio: {df_clean.shape[0]} observaciones completas")
+print(f"\n Dataset limpio: {df_clean.shape[0]} observaciones completas")
 print(f"Años disponibles: {sorted(df_clean['year'].unique())}")
 
 # Mostrar datos limpios
@@ -156,7 +156,7 @@ for feat in reg_features:
     min_val = df_clean[feat].min()
     max_val = df_clean[feat].max()
     if min_val < 0 or max_val > 1:
-        print(f"  ⚠️  {feat}: [{min_val:.3f}, {max_val:.3f}] - Fuera de rango")
+        print(f"   {feat}: [{min_val:.3f}, {max_val:.3f}] - Fuera de rango")
     else:
         print(f"  ✓ {feat}: [{min_val:.3f}, {max_val:.3f}] - OK")
 
@@ -193,7 +193,7 @@ try:
     XTy = X_T @ y
     beta_l2 = XTX_inv @ XTy
     
-    print("\n✅ Coeficientes L2 calculados:")
+    print("\n Coeficientes L2 calculados:")
     print(f"  Intercepto (β₀): {beta_l2[0]:.6f}")
     for i, feat in enumerate(reg_features, 1):
         print(f"  {feat:25s}: β{i} = {beta_l2[i]:+10.6f}")
@@ -344,7 +344,7 @@ coeff_diff = np.max([np.max(np.abs(beta_l2 - beta_l1)),
                      np.max(np.abs(beta_l2 - beta_linf))])
 
 if coeff_diff < 1e-6:
-    print("\n🔍 OBSERVACIÓN: Los tres modelos producen coeficientes idénticos.")
+    print("\n OBSERVACIÓN: Los tres modelos producen coeficientes idénticos.")
     print("   Razón: n (observaciones) ≈ p (variables) + 1")
     print(f"   n = {n_samples}, p = {n_features} → sistema perfectamente determinado")
 else:
